@@ -26,7 +26,7 @@ docker compose up --build
 
 - Frontend: http://localhost:5173
 - API: http://localhost:8000/api (Swagger: http://localhost:8000/docs)
-- PostgreSQL: localhost:5432 (`trustai` / `trustai`)
+- PostgreSQL: localhost:5432 (user and password from your `.env`)
 
 ## Running without Docker
 
