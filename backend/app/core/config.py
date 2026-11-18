@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     upload_dir: Path = Path("uploads")
     max_upload_size_mb: int = 5
 
+    # JWT (US01)
+    jwt_secret: str = "change-me"
+    jwt_expires_minutes: int = 60
+    password_reset_expires_minutes: int = 30
+
     @property
     def database_url(self) -> URL:
         return URL.create(
