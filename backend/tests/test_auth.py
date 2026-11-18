@@ -101,7 +101,9 @@ def test_me_with_garbage_token_is_rejected(client: TestClient) -> None:
 
 
 def test_password_reset_flow(client: TestClient) -> None:
-    client.post("/api/auth/register", json={"email": "reset@example.com", "password": "OldPassw0rd!"})
+    client.post(
+        "/api/auth/register", json={"email": "reset@example.com", "password": "OldPassw0rd!"}
+    )
 
     request_response = client.post(
         "/api/auth/password-reset/request", json={"email": "reset@example.com"}
@@ -128,9 +130,7 @@ def test_password_reset_flow(client: TestClient) -> None:
 
 
 def test_password_reset_for_unknown_email_does_not_leak_existence(client: TestClient) -> None:
-    response = client.post(
-        "/api/auth/password-reset/request", json={"email": "ghost@example.com"}
-    )
+    response = client.post("/api/auth/password-reset/request", json={"email": "ghost@example.com"})
     assert response.status_code == 200
     body = response.json()
     assert body["reset_token"] is None

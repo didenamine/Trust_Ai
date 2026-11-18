@@ -19,7 +19,9 @@ from app.services import auth_service
 
 router = APIRouter(tags=["auth"])
 
-_RESET_REQUESTED_MESSAGE = "Si un compte existe avec cet e-mail, un lien de réinitialisation a été envoyé."
+_RESET_REQUESTED_MESSAGE = (
+    "Si un compte existe avec cet e-mail, un lien de réinitialisation a été envoyé."
+)
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -29,7 +31,9 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
             db, email=payload.email, password=payload.password, full_name=payload.full_name
         )
     except auth_service.EmailAlreadyRegisteredError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Un compte existe déjà avec cet e-mail") from exc
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Un compte existe déjà avec cet e-mail"
+        ) from exc
 
 
 @router.post("/login", response_model=Token)
@@ -37,7 +41,9 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
     try:
         user = auth_service.authenticate_user(db, email=payload.email, password=payload.password)
     except auth_service.InvalidCredentialsError as exc:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "E-mail ou mot de passe incorrect") from exc
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "E-mail ou mot de passe incorrect"
+        ) from exc
 
     return Token(access_token=create_access_token(str(user.id)))
 
@@ -63,7 +69,9 @@ def request_password_reset(
 @router.post("/password-reset/confirm", response_model=UserOut)
 def confirm_password_reset(payload: PasswordResetConfirm, db: Session = Depends(get_db)) -> User:
     try:
-        return auth_service.reset_password(db, token=payload.token, new_password=payload.new_password)
+        return auth_service.reset_password(
+            db, token=payload.token, new_password=payload.new_password
+        )
     except auth_service.InvalidResetTokenError as exc:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Jeton de réinitialisation invalide ou expiré"
