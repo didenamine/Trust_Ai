@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getStoredToken } from './tokenStorage'
 
 /**
  * Shared Axios instance for every call to the TrustAI API.
@@ -9,5 +10,11 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// US01 (Ikram): attach the JWT here once authentication is ready.
-// api.interceptors.request.use((config) => { ... })
+// US01: attach the JWT (if any) to every outgoing request.
+api.interceptors.request.use((config) => {
+  const token = getStoredToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
