@@ -49,3 +49,14 @@ export async function fetchMyOffers(): Promise<JobOfferSummary[]> {
   const { data } = await api.get<JobOfferSummary[]>('/offers')
   return data
 }
+
+/** US08: remove an offer from the signed-in candidate's list. */
+export async function deleteOffer(id: string): Promise<void> {
+  try {
+    await api.delete(`/offers/${id}`)
+  } catch (error) {
+    // Already removed (for example from another tab): the goal is reached.
+    if (axios.isAxiosError(error) && error.response?.status === 404) return
+    throw error
+  }
+}

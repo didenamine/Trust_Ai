@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -8,7 +8,7 @@ import { api } from './lib/api'
 import type { JobOfferSummary } from './lib/offers'
 
 vi.mock('./lib/api', () => ({
-  api: { post: vi.fn(), get: vi.fn() },
+  api: { post: vi.fn(), get: vi.fn(), delete: vi.fn() },
 }))
 
 const OFFER_URL = 'https://jobs.example.com/offres/42'
@@ -264,5 +264,88 @@ describe('US08 - my offers', () => {
       'aria-expanded',
       'true',
     )
+  })
+})
+
+describe('US08 - delete an offer', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('trustai.access_token', 'fake-token')
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+    vi.mocked(api.delete).mockReset()
+  })
+
+  it('deletes an offer after confirmation and refreshes the list', async () => {
+    const user = userEvent.setup()
+    mockApiGet(summaries)
+    vi.mocked(api.delete).mockResolvedValue({ status: 204 })
+    renderApp('/offres')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Supprimer Stage PFE Data Scientist' }),
+    )
+    expect(screen.getByText('Supprimer cette offre ?')).toBeInTheDocument()
+
+    mockApiGet([summaries[1]])
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Stage PFE Data Scientist' }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(api.delete).toHaveBeenCalledWith('/offers/offer-1')
+    expect(screen.getByRole('heading', { name: 'Développeur Python backend' })).toBeInTheDocument()
+  })
+
+  it('does nothing when the deletion is cancelled', async () => {
+    const user = userEvent.setup()
+    mockApiGet(summaries)
+    renderApp('/offres')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Supprimer Stage PFE Data Scientist' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Annuler' }))
+
+    expect(screen.queryByText('Supprimer cette offre ?')).not.toBeInTheDocument()
+    expect(api.delete).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: 'Stage PFE Data Scientist' })).toBeInTheDocument()
+  })
+
+  it('shows an error and keeps the offer when the deletion fails', async () => {
+    const user = userEvent.setup()
+    mockApiGet(summaries)
+    vi.mocked(api.delete).mockRejectedValue(new Error('Network Error'))
+    renderApp('/offres')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Supprimer Stage PFE Data Scientist' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("Impossible de supprimer l'offre.")
+    expect(screen.getByRole('heading', { name: 'Stage PFE Data Scientist' })).toBeInTheDocument()
+  })
+
+  it('treats an offer that is already gone as deleted', async () => {
+    const user = userEvent.setup()
+    mockApiGet(summaries)
+    vi.mocked(api.delete).mockRejectedValue({ isAxiosError: true, response: { status: 404 } })
+    renderApp('/offres')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Supprimer Stage PFE Data Scientist' }),
+    )
+    mockApiGet([summaries[1]])
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Stage PFE Data Scientist' }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

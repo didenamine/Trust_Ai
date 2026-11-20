@@ -1,14 +1,20 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchMyOffers, type JobOfferSummary } from '../lib/offers'
+import { deleteOffer, fetchMyOffers, type JobOfferSummary } from '../lib/offers'
 
 const LONG_DESCRIPTION_CHARS = 280
 const LONG_DESCRIPTION_LINES = 4
 
 function OfferCard({ offer }: { offer: JobOfferSummary }) {
+  const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const remove = useMutation({
+    mutationFn: () => deleteOffer(offer.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offers'] }),
+  })
   const isLong =
     offer.description.length > LONG_DESCRIPTION_CHARS ||
     offer.description.split('\n').length > LONG_DESCRIPTION_LINES
@@ -53,6 +59,46 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       ) : (
         <p className="text-sm italic text-slate-500">Pas de description.</p>
       )}
+      <div className="pt-1">
+        {confirming ? (
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span>Supprimer cette offre ?</span>
+            <button
+              type="button"
+              disabled={remove.isPending}
+              onClick={() => remove.mutate()}
+              className="rounded bg-red-600 px-3 py-1 text-white disabled:opacity-50"
+            >
+              {remove.isPending ? 'Suppression...' : 'Oui, supprimer'}
+            </button>
+            <button
+              type="button"
+              disabled={remove.isPending}
+              onClick={() => {
+                remove.reset()
+                setConfirming(false)
+              }}
+              className="text-slate-600 underline"
+            >
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Supprimer ${offer.title}`}
+            onClick={() => setConfirming(true)}
+            className="text-sm text-red-600 underline"
+          >
+            Supprimer
+          </button>
+        )}
+        {remove.isError && (
+          <p role="alert" className="mt-2 text-sm text-red-700">
+            Impossible de supprimer l'offre. Réessayez.
+          </p>
+        )}
+      </div>
     </li>
   )
 }
