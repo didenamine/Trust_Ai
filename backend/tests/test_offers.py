@@ -1,6 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.services import offer_fetcher
+
 OFFER_TEXT = (
     "Développeur Python backend (H/F). Vous concevez des API REST avec FastAPI, "
     "vous maîtrisez PostgreSQL et Docker. 3 ans d'expérience minimum."
@@ -56,3 +58,62 @@ def test_list_offers_returns_only_my_offers(db_client: TestClient) -> None:
 
 def test_list_offers_requires_authentication(db_client: TestClient) -> None:
     assert db_client.get("/api/offers").status_code == 401
+
+
+OFFER_URL = "https://jobs.example.com/offres/42"
+
+
+def _failing_fetch(error: Exception):
+    def fetch(url: str) -> str:
+        raise error
+
+    return fetch
+
+
+def test_create_offer_from_url(db_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(offer_fetcher, "fetch_offer_text", lambda url: OFFER_TEXT)
+    headers = _auth_headers(db_client)
+
+    response = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=headers)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source_type"] == "url"
+    assert body["source_url"] == OFFER_URL
+    assert body["content"] == OFFER_TEXT
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"url": "pas-une-url"},
+        {"url": "ftp://example.com/offre"},
+        {"url": OFFER_URL, "text": OFFER_TEXT},
+    ],
+)
+def test_create_offer_rejects_invalid_source(db_client: TestClient, payload) -> None:
+    headers = _auth_headers(db_client)
+
+    response = db_client.post("/api/offers", json=payload, headers=headers)
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_status"),
+    [
+        (offer_fetcher.UnsafeUrlError(), 422),
+        (offer_fetcher.NoContentError("Aucun texte."), 422),
+        (offer_fetcher.FetchFailedError("La page a répondu avec le code 404."), 502),
+    ],
+)
+def test_url_fetch_errors_are_mapped_to_http_errors(
+    db_client: TestClient, monkeypatch: pytest.MonkeyPatch, error: Exception, expected_status: int
+) -> None:
+    monkeypatch.setattr(offer_fetcher, "fetch_offer_text", _failing_fetch(error))
+    headers = _auth_headers(db_client)
+
+    response = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=headers)
+
+    assert response.status_code == expected_status
+    assert db_client.get("/api/offers", headers=headers).json() == []
