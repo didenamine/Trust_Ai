@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import CVUploadPage from './pages/CVUploadPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="connexion" element={<LoginPage />} />
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+        <Route path="mon-cv" element={<CVUploadPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
