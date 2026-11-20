@@ -33,3 +33,19 @@ export function getOfferErrorMessage(error: unknown): string {
   }
   return 'Impossible de joindre le serveur. Réessayez dans un instant.'
 }
+
+export type JobOfferSummary = {
+  id: string
+  source_type: 'url' | 'text'
+  source_url: string | null
+  title: string
+  description: string
+  /** When the signed-in candidate added the offer. */
+  created_at: string
+}
+
+/** US08: the offers of the signed-in candidate, newest first. */
+export async function fetchMyOffers(): Promise<JobOfferSummary[]> {
+  const { data } = await api.get<JobOfferSummary[]>('/offers')
+  return data
+}

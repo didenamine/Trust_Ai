@@ -21,6 +21,9 @@ export default function Layout() {
             <div className="flex items-center gap-4 text-sm">
               {user ? (
                 <>
+                  <Link to="/offres" className="text-blue-600 underline">
+                    Mes offres
+                  </Link>
                   <Link to="/offres/nouvelle" className="text-blue-600 underline">
                     Ajouter une offre
                   </Link>

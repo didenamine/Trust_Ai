@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { createOffer, getOfferErrorMessage, type CreateOfferResult } from '../lib/offers'
+import { useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 
 const MIN_TEXT_LENGTH = 50
 const MAX_TEXT_LENGTH = 50_000
@@ -63,6 +65,8 @@ export default function AddOfferPage() {
     resolver: zodResolver(offerSchema),
     defaultValues: { mode: 'url', url: '', text: '' },
   })
+
+  const queryClient = useQueryClient()
   const [result, setResult] = useState<CreateOfferResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const mode = watch('mode')
@@ -75,6 +79,7 @@ export default function AddOfferPage() {
         values.mode === 'url' ? { url: values.url } : { text: values.text },
       )
       setResult(created)
+      queryClient.invalidateQueries({ queryKey: ['offers'] })
       reset({ mode: values.mode, url: '', text: '' })
     } catch (err) {
       setError(getOfferErrorMessage(err))
@@ -189,6 +194,9 @@ export default function AddOfferPage() {
           <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded bg-white p-3">
             {result.offer.content}
           </pre>
+          <Link to="/offres" className="inline-block text-blue-600 underline">
+            Voir mes offres
+          </Link>
         </div>
       )}
     </section>

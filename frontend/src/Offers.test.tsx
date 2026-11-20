@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { api } from './lib/api'
+import type { JobOfferSummary } from './lib/offers'
 
 vi.mock('./lib/api', () => ({
   api: { post: vi.fn(), get: vi.fn() },
@@ -163,5 +164,105 @@ describe('US08 - add a job offer', () => {
     expect(
       await screen.findByText('Impossible de joindre le serveur. Réessayez dans un instant.'),
     ).toBeInTheDocument()
+  })
+})
+
+const LONG_DESCRIPTION = 'Vous concevez des API REST avec FastAPI. '.repeat(10)
+
+const summaries: JobOfferSummary[] = [
+  {
+    id: 'offer-1',
+    source_type: 'url',
+    source_url: OFFER_URL,
+    title: 'Stage PFE Data Scientist',
+    description: 'Bestlab · Tunis\n\nAnalyse de données et modèles prédictifs.',
+    created_at: '2026-11-20T10:00:00Z',
+  },
+  {
+    id: 'offer-2',
+    source_type: 'text',
+    source_url: null,
+    title: 'Développeur Python backend',
+    description: LONG_DESCRIPTION,
+    created_at: '2026-11-19T09:00:00Z',
+  },
+]
+
+/** GET /auth/me answers with a user; GET /offers answers with `offers` or fails. */
+function mockApiGet(offers: JobOfferSummary[] | Error) {
+  vi.mocked(api.get).mockImplementation(async (url: string) => {
+    if (url === '/auth/me') {
+      return { data: { id: '1', email: 'me@example.com', full_name: null } }
+    }
+    if (url === '/offers') {
+      if (offers instanceof Error) throw offers
+      return { data: offers }
+    }
+    throw new Error(`unexpected GET ${url}`)
+  })
+}
+
+describe('US08 - my offers', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('trustai.access_token', 'fake-token')
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+  })
+
+  it('lists my offers with their title and description', async () => {
+    mockApiGet(summaries)
+
+    renderApp('/offres')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Stage PFE Data Scientist' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Développeur Python backend' })).toBeInTheDocument()
+    expect(screen.getByText(/Analyse de données et modèles prédictifs/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: "Annonce d'origine" })).toHaveAttribute(
+      'href',
+      OFFER_URL,
+    )
+  })
+
+  it('shows a message when I have no offer yet', async () => {
+    mockApiGet([])
+
+    renderApp('/offres')
+
+    expect(await screen.findByText("Vous n'avez encore ajouté aucune offre.")).toBeInTheDocument()
+  })
+
+  it('shows an error with a retry button when the list cannot be loaded', async () => {
+    const user = userEvent.setup()
+    mockApiGet(new Error('Network Error'))
+
+    renderApp('/offres')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de charger vos offres.')
+
+    mockApiGet(summaries)
+    await user.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Stage PFE Data Scientist' }),
+    ).toBeInTheDocument()
+  })
+
+  it('expands and collapses a long description', async () => {
+    const user = userEvent.setup()
+    mockApiGet(summaries)
+    renderApp('/offres')
+
+    const button = await screen.findByRole('button', { name: 'Voir plus' })
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(button)
+
+    expect(screen.getByRole('button', { name: 'Voir moins' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
   })
 })
