@@ -290,3 +290,84 @@ Deuxième ligne de l'offre, assez longue pour dépasser cinquante caractères."}
 
     assert text is not None
     assert "Deuxième ligne" in text
+
+
+def test_extra_facts_merges_labels_with_values_and_skips_page_chrome() -> None:
+    visible = "\n".join(
+        [
+            "Emploi Tunisie » Offres d'emploi à Tunis » Stage PFE",
+            "- Il'y a 11 heures",
+            "- Experience :",
+            "- Débutant",
+        ]
+    )
+
+    extras = offer_fetcher._extra_facts(visible, "Stage PFE\n\nDescription")
+
+    assert extras == "- Experience : Débutant"
+
+
+def test_html_is_cut_at_the_similar_jobs_heading(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str] = []
+
+    def fake_extract(page: str, **kwargs) -> str:
+        seen.append(page)
+        return "Texte de l'offre " * 10
+
+    monkeypatch.setattr(offer_fetcher.trafilatura, "extract", fake_extract)
+    page = (
+        "<body><h1>Offre</h1><p>Texte</p>"
+        "<h2>Offres d&#039;emploi similaires sponsorisées</h2><p>Esker</p></body>"
+    )
+
+    offer_fetcher._visible_text(page)
+
+    assert "Texte" in seen[0]
+    assert "Esker" not in seen[0]
+
+
+def test_visible_text_retries_on_the_full_page_if_the_cut_removes_the_offer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_extract(page: str, **kwargs) -> str:
+        return "Contenu de l'offre complet " * 5 if "Contenu" in page else ""
+
+    monkeypatch.setattr(offer_fetcher.trafilatura, "extract", fake_extract)
+
+    text = offer_fetcher._visible_text("<h2>Similar jobs</h2><p>Contenu</p>")
+
+    assert text.startswith("Contenu")
+
+
+META_KEYWORDS = (
+    "offre d'emploi Stage PFE, offres d'emploi Bestlab, recrutement chez Bestlab, "
+    "Bestlab, Python, SQL, Python<!--, Bestlab, Python, -->"
+)
+
+
+def test_meta_keywords_drop_seo_phrases_and_duplicates() -> None:
+    page = f'<meta name="keywords" content="{META_KEYWORDS}"><b>Mots clés:</b>'
+
+    assert offer_fetcher._meta_keywords(page) == "Bestlab, Python, SQL"
+
+
+def test_meta_keywords_are_ignored_when_the_page_shows_no_keywords_section() -> None:
+    page = '<meta name="keywords" content="Python, SQL"><p>Une offre.</p>'
+
+    assert offer_fetcher._meta_keywords(page) == ""
+
+
+@pytest.mark.usefixtures("no_page_text")
+def test_offer_gets_a_keywords_line_from_the_meta_tag() -> None:
+    posting = {
+        "@type": "JobPosting",
+        "title": "Stage PFE Data Scientist",
+        "description": DESCRIPTION,
+    }
+    meta_tag = '<meta name="keywords" content="Bestlab, Python, SQL">'
+    page = meta_tag + _page_with_json_ld(posting, "<b>Mots clés:</b>")
+    transport = httpx.MockTransport(lambda request: _html_response(page))
+
+    text = offer_fetcher.fetch_offer_text(OFFER_URL, transport=transport)
+
+    assert text.endswith("Mots clés : Bestlab, Python, SQL")

@@ -50,7 +50,30 @@ _TAIL_MARKERS = (
     "show more jobs",
 )
 _MIN_CUT_INDEX = 200  # never cut so early that almost nothing is left
-# Pages that answer 200 but only display "this job does not exist" (soft 404).
+_APOSTROPHE = r"(?:'|’|&#0?39;|&#x27;|&rsquo;|&apos;)"
+# A heading that opens a "similar jobs" style section: everything after it is not the offer.
+_TAIL_HEADING_RE = re.compile(
+    r"<h[1-6][^>]*>\s*(?:<[^>]+>\s*)*(?:"
+    + "|".join(
+        re.escape(marker).replace("'", _APOSTROPHE).replace(r"\ ", r"\s+")
+        for marker in _TAIL_MARKERS
+    )
+    + ")",
+    re.IGNORECASE,
+)
+_META_KEYWORDS_RES = (
+    re.compile(
+        r"""<meta\b[^>]*?\bname=["']keywords["'][^>]*?\bcontent=(["'])(.*?)\1""",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"""<meta\b[^>]*?\bcontent=(["'])(.*?)\1[^>]*?\bname=["']keywords["']""",
+        re.IGNORECASE | re.DOTALL,
+    ),
+)
+_SHOWS_KEYWORDS_RE = re.compile(r"mots[\s-]*cl(?:é|&eacute;|e)s", re.IGNORECASE)
+# SEO filler that sites put first in <meta name="keywords"> ("offre d'emploi X, ...").
+_SEO_PREFIXES = ("offre", "offres", "recrutement", "emploi", "job", "jobs", "recruitment")
 _MAX_EXTRA_CHARS = 6000
 # Visible lines that are page chrome, not offer facts (lowercase, straight apostrophes).
 _NOISE_PREFIXES = (
@@ -60,6 +83,8 @@ _NOISE_PREFIXES = (
     "partagez",
     "découvrez qui",
     "n'attendez pas",
+    "il'y a",
+    "il y a",
 )
 # JobPosting fields worth keeping next to the description, as "label : value" lines.
 _DETAIL_FIELDS = (
@@ -73,7 +98,7 @@ _DETAIL_FIELDS = (
     ("Compétences", "skills"),
     ("Mots clés", "keywords"),
 )
-
+# Pages that answer 200 but only display "this job does not exist" (soft 404).
 _ERROR_PHRASES = (
     "nous sommes désolés",
     "we're sorry",
@@ -284,34 +309,72 @@ def _normalize(text: str) -> str:
 def _extra_facts(visible: str, structured: str) -> str:
     """Lines of the visible page that the JSON-LD block does not already contain.
 
-    JSON-LD is often incomplete: expiry date, keywords, experience or study level are
-    frequently shown on the page only. They are appended after the structured text.
+    JSON-LD is often incomplete: experience, study level, requirements... are frequently
+    shown on the page only. They are appended after the structured text.
     """
     known = _normalize(structured)
     extras: list[str] = []
     for line in (raw.strip() for raw in visible.splitlines()):
         key = _normalize(line)
-        if len(key) < 3 or key in known:
+        text = line.lstrip("-•*· ").lower().replace("’", "'")
+        if len(key) < 3 or key in known or "»" in line or text.startswith(_NOISE_PREFIXES):
             continue
-        if line.lower().replace("’", "'").startswith(_NOISE_PREFIXES):
-            continue
-        extras.append(line)
+        if extras and extras[-1].endswith(":"):  # "Experience :" then "Débutant"
+            extras[-1] = f"{extras[-1]} {line.lstrip('-•*· ')}"
+        else:
+            extras.append(line)
         known += key  # a repeated line is only kept once
     return "\n".join(extras)[:_MAX_EXTRA_CHARS]
 
 
+def _meta_keywords(page: str) -> str:
+    """Keywords from <meta name="keywords">, only if the page itself shows a "Mots clés" section.
+
+    Many job boards display the offer's keywords as links that text extraction drops, but
+    repeat them in this meta tag (after a few SEO phrases, which are removed here).
+    """
+    if not _SHOWS_KEYWORDS_RE.search(page):
+        return ""
+    for pattern in _META_KEYWORDS_RES:
+        if match := pattern.search(page):
+            raw = re.sub(r"<!--.*?-->", "", html.unescape(match.group(2)), flags=re.DOTALL)
+            break
+    else:
+        return ""
+    keywords: list[str] = []
+    for item in (part.strip() for part in raw.split(",")):
+        if item and not item.lower().startswith(_SEO_PREFIXES) and item not in keywords:
+            keywords.append(item)
+    return ", ".join(keywords[:40])
+
+
+def _visible_text(page: str) -> str:
+    """Main text of the page, ignoring the "similar jobs" section and what follows it."""
+    candidates = [page]
+    if match := _TAIL_HEADING_RE.search(page):
+        candidates.insert(0, page[: match.start()])  # if this cut removes the offer, retry
+    for candidate in candidates:
+        extracted = trafilatura.extract(candidate, include_comments=False, favor_recall=True)
+        text = _trim_boilerplate(_clean(extracted or ""))
+        if len(text) >= MIN_CONTENT_CHARS:
+            return text
+    return ""
+
+
 def fetch_offer_text(url: str, *, transport: httpx.BaseTransport | None = None) -> str:
     """Download `url` and return the text of the job offer (without page boilerplate)."""
-    body = _download(url, transport)
+    page = _download(url, transport).decode("utf-8", errors="replace")
 
-    extracted = trafilatura.extract(body, include_comments=False, favor_recall=True)
-    visible = _trim_boilerplate(_clean(extracted or ""))
-
-    structured = _text_from_json_ld(body.decode("utf-8", errors="replace"))
+    visible = _visible_text(page)
+    structured = _text_from_json_ld(page)
     if structured is None:
         text = visible
     else:
         text = "\n\n".join(part for part in (structured, _extra_facts(visible, structured)) if part)
+
+    keywords = _meta_keywords(page)
+    if keywords and "mots clés" not in text.lower():
+        text = f"{text}\n\nMots clés : {keywords}"
 
     if len(text) < MIN_CONTENT_CHARS or _is_error_page(text):
         raise NoContentError("Aucun texte d'offre n'a pu être extrait de cette page.")
