@@ -1,6 +1,8 @@
 """Business logic for US08 (adding and listing job offers)."""
 
-from sqlalchemy import select
+import uuid
+
+from sqlalchemy import delete, exists, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -76,3 +78,22 @@ def list_offers(db: Session, *, user: User) -> list[UserOffer]:
         select(UserOffer).where(UserOffer.user_id == user.id).order_by(UserOffer.created_at.desc())
     )
     return list(db.scalars(statement))
+
+
+def delete_offer(db: Session, *, user: User, offer_id: uuid.UUID) -> bool:
+    """Remove an offer from the user's list. Returns False if it was not in the list.
+
+    The stored offer is deleted too once nobody has it in their list any more, so an offer
+    shared by several candidates stays available to the others.
+    """
+    link = db.get(UserOffer, (user.id, offer_id))
+    if link is None:
+        return False
+
+    db.delete(link)
+    db.flush()
+    # One statement: the offer is removed only if no list still points to it.
+    orphan = ~exists().where(UserOffer.offer_id == offer_id)
+    db.execute(delete(JobOffer).where(JobOffer.id == offer_id, orphan))
+    db.commit()
+    return True

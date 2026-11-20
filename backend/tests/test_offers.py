@@ -208,3 +208,61 @@ def test_list_offers_returns_title_and_description(db_client: TestClient) -> Non
     assert offers[0]["description"].startswith("Bestlab · Tunis")
     assert offers[0]["source_type"] == "text"
     assert "content" not in offers[0]
+
+
+def test_delete_my_offer(db_client: TestClient) -> None:
+    headers = _auth_headers(db_client)
+    created = db_client.post("/api/offers", json={"text": OFFER_TEXT}, headers=headers)
+
+    response = db_client.delete(f"/api/offers/{created.json()['id']}", headers=headers)
+
+    assert response.status_code == 204
+    assert db_client.get("/api/offers", headers=headers).json() == []
+
+
+def test_deleting_a_shared_offer_keeps_it_for_the_other_users(
+    db_client: TestClient, monkeypatch
+) -> None:
+    calls = _count_fetches(monkeypatch)
+    alice = _auth_headers(db_client, "alice@example.com")
+    bob = _auth_headers(db_client, "bob@example.com")
+    created = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=alice)
+    offer_id = created.json()["id"]
+    db_client.post("/api/offers", json={"url": OFFER_URL}, headers=bob)
+
+    assert db_client.delete(f"/api/offers/{offer_id}", headers=alice).status_code == 204
+
+    assert db_client.get("/api/offers", headers=alice).json() == []
+    assert [o["id"] for o in db_client.get("/api/offers", headers=bob).json()] == [offer_id]
+
+    # When the last user deletes it, the stored offer is removed: adding the URL downloads it again.
+    assert db_client.delete(f"/api/offers/{offer_id}", headers=bob).status_code == 204
+    db_client.post("/api/offers", json={"url": OFFER_URL}, headers=alice)
+    assert len(calls) == 2
+
+
+def test_cannot_delete_an_offer_from_someone_elses_list(db_client: TestClient) -> None:
+    alice = _auth_headers(db_client, "alice@example.com")
+    bob = _auth_headers(db_client, "bob@example.com")
+    created = db_client.post("/api/offers", json={"text": OFFER_TEXT}, headers=alice)
+
+    response = db_client.delete(f"/api/offers/{created.json()['id']}", headers=bob)
+
+    assert response.status_code == 404
+    assert len(db_client.get("/api/offers", headers=alice).json()) == 1
+
+
+def test_delete_unknown_or_invalid_offer(db_client: TestClient) -> None:
+    headers = _auth_headers(db_client)
+
+    unknown = db_client.delete("/api/offers/00000000-0000-0000-0000-000000000000", headers=headers)
+    invalid = db_client.delete("/api/offers/not-a-uuid", headers=headers)
+
+    assert unknown.status_code == 404
+    assert invalid.status_code == 422
+
+
+def test_delete_offer_requires_authentication(db_client: TestClient) -> None:
+    response = db_client.delete("/api/offers/00000000-0000-0000-0000-000000000000")
+
+    assert response.status_code == 401

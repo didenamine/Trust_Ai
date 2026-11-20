@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
@@ -80,3 +82,13 @@ def list_my_offers(
     current_user: User = Depends(get_current_user),
 ) -> list[JobOfferSummary]:
     return [_to_summary(link) for link in job_offer_service.list_offers(db, user=current_user)]
+
+
+@router.delete("/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_offer(
+    offer_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    if not job_offer_service.delete_offer(db, user=current_user, offer_id=offer_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Offre introuvable.")
