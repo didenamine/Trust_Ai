@@ -53,7 +53,7 @@ def test_list_offers_returns_only_my_offers(db_client: TestClient) -> None:
     assert response.status_code == 200
     offers = response.json()
     assert len(offers) == 1
-    assert offers[0]["content"] == OFFER_TEXT
+    assert offers[0]["description"] == OFFER_TEXT
 
 
 def test_list_offers_requires_authentication(db_client: TestClient) -> None:
@@ -191,3 +191,20 @@ def test_create_offer_accepts_any_pasted_text(db_client: TestClient) -> None:
         "Développeur Python backend\nVous concevez des API REST avec FastAPI.\n"
         '\tExpérience : 3 ans • "Télétravail" 🚀 — CDI / Stage (H/F) & plus…'
     )
+
+
+def test_list_offers_returns_title_and_description(db_client: TestClient) -> None:
+    text = (
+        "Stage PFE Data Scientist\nBestlab · Tunis\n\n"
+        "Analyse de données et développement de modèles prédictifs pour nos clients."
+    )
+    headers = _auth_headers(db_client)
+    db_client.post("/api/offers", json={"text": text}, headers=headers)
+
+    offers = db_client.get("/api/offers", headers=headers).json()
+
+    assert len(offers) == 1
+    assert offers[0]["title"] == "Stage PFE Data Scientist"
+    assert offers[0]["description"].startswith("Bestlab · Tunis")
+    assert offers[0]["source_type"] == "text"
+    assert "content" not in offers[0]

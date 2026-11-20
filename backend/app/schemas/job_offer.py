@@ -48,3 +48,14 @@ class JobOfferOut(BaseModel):
     source_url: str | None = None
     content: str
     created_at: datetime
+
+
+class JobOfferSummary(BaseModel):
+    """An offer as listed on the "my offers" page: title and description, no raw content."""
+
+    id: uuid.UUID
+    source_type: str
+    source_url: str | None = None
+    title: str
+    description: str
+    created_at: datetime

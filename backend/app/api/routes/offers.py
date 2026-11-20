@@ -5,8 +5,9 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.job_offer import UserOffer
 from app.models.user import User
-from app.schemas.job_offer import JobOfferCreate, JobOfferOut
+from app.schemas.job_offer import JobOfferCreate, JobOfferOut, JobOfferSummary
 from app.services import job_offer_service, offer_fetcher
+from app.services.offer_text import split_title_and_description
 
 router = APIRouter(tags=["offers"])
 
@@ -19,6 +20,19 @@ def _to_out(link: UserOffer) -> JobOfferOut:
         source_type=offer.source_type,
         source_url=offer.source_url,
         content=offer.content,
+        created_at=link.created_at,
+    )
+
+
+def _to_summary(link: UserOffer) -> JobOfferSummary:
+    offer = link.offer
+    title, description = split_title_and_description(offer.content)
+    return JobOfferSummary(
+        id=offer.id,
+        source_type=offer.source_type,
+        source_url=offer.source_url,
+        title=title,
+        description=description,
         created_at=link.created_at,
     )
 
@@ -60,9 +74,9 @@ def create_offer(
     return _to_out(link)
 
 
-@router.get("", response_model=list[JobOfferOut])
+@router.get("", response_model=list[JobOfferSummary])
 def list_my_offers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[JobOfferOut]:
-    return [_to_out(link) for link in job_offer_service.list_offers(db, user=current_user)]
+) -> list[JobOfferSummary]:
+    return [_to_summary(link) for link in job_offer_service.list_offers(db, user=current_user)]
