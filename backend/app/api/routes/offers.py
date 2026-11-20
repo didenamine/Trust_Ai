@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -11,9 +11,15 @@ from app.services import job_offer_service, offer_fetcher
 router = APIRouter(tags=["offers"])
 
 
-@router.post("", response_model=JobOfferOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=JobOfferOut,
+    status_code=status.HTTP_201_CREATED,
+    responses={status.HTTP_200_OK: {"description": "URL already saved: existing offer."}},
+)
 def create_offer(
     payload: JobOfferCreate,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> JobOffer:
@@ -21,7 +27,9 @@ def create_offer(
         return job_offer_service.create_text_offer(db, user=current_user, text=payload.text)
 
     try:
-        return job_offer_service.create_url_offer(db, user=current_user, url=str(payload.url))
+        offer, created = job_offer_service.create_url_offer(
+            db, user=current_user, url=str(payload.url)
+        )
     except offer_fetcher.UnsafeUrlError as exc:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "Cette adresse n'est pas autorisée."
@@ -33,6 +41,10 @@ def create_offer(
         ) from exc
     except offer_fetcher.FetchFailedError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+
+    if not created:
+        response.status_code = status.HTTP_200_OK
+    return offer
 
 
 @router.get("", response_model=list[JobOfferOut])

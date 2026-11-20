@@ -117,3 +117,72 @@ def test_url_fetch_errors_are_mapped_to_http_errors(
 
     assert response.status_code == expected_status
     assert db_client.get("/api/offers", headers=headers).json() == []
+
+
+def _count_fetches(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    calls: list[str] = []
+
+    def fetch(url: str) -> str:
+        calls.append(url)
+        return OFFER_TEXT
+
+    monkeypatch.setattr(offer_fetcher, "fetch_offer_text", fetch)
+    return calls
+
+
+def test_same_url_is_saved_only_once(db_client: TestClient, monkeypatch) -> None:
+    calls = _count_fetches(monkeypatch)
+    headers = _auth_headers(db_client)
+
+    first = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=headers)
+    second = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=headers)
+
+    assert first.status_code == 201
+    assert second.status_code == 200
+    assert second.json()["id"] == first.json()["id"]
+    assert len(calls) == 1  # the page is not downloaded a second time
+    assert len(db_client.get("/api/offers", headers=headers).json()) == 1
+
+
+def test_url_variants_are_the_same_offer(db_client: TestClient, monkeypatch) -> None:
+    calls = _count_fetches(monkeypatch)
+    headers = _auth_headers(db_client)
+    first = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=headers)
+
+    second = db_client.post(
+        "/api/offers",
+        json={"url": "https://JOBS.example.com/offres/42/?utm_source=newsletter#postuler"},
+        headers=headers,
+    )
+
+    assert second.status_code == 200
+    assert second.json()["id"] == first.json()["id"]
+    assert len(calls) == 1
+
+
+def test_two_users_can_save_the_same_url(db_client: TestClient, monkeypatch) -> None:
+    _count_fetches(monkeypatch)
+    alice = _auth_headers(db_client, "alice@example.com")
+    bob = _auth_headers(db_client, "bob@example.com")
+
+    first = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=alice)
+    second = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=bob)
+
+    assert first.status_code == second.status_code == 201
+    assert first.json()["id"] != second.json()["id"]
+
+
+def test_create_offer_accepts_any_pasted_text(db_client: TestClient) -> None:
+    pasted = (
+        "Développeur Python\x00 backend\r\nVous concevez des API REST\x07 avec FastAPI.\r\n"
+        '\tExpérience : 3 ans • "Télétravail" 🚀 — CDI / Stage (H/F) & plus…'
+    )
+    headers = _auth_headers(db_client)
+
+    response = db_client.post("/api/offers", json={"text": pasted}, headers=headers)
+
+    assert response.status_code == 201
+    assert response.json()["content"] == (
+        "Développeur Python backend\nVous concevez des API REST avec FastAPI.\n"
+        '\tExpérience : 3 ans • "Télétravail" 🚀 — CDI / Stage (H/F) & plus…'
+    )

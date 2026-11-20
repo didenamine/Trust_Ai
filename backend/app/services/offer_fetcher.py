@@ -16,7 +16,7 @@ import ipaddress
 import json
 import re
 import socket
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 import trafilatura
@@ -379,3 +379,18 @@ def fetch_offer_text(url: str, *, transport: httpx.BaseTransport | None = None) 
     if len(text) < MIN_CONTENT_CHARS or _is_error_page(text):
         raise NoContentError("Aucun texte d'offre n'a pu être extrait de cette page.")
     return text[:MAX_CONTENT_CHARS]
+
+
+_TRACKING_PARAMS = {"fbclid", "gclid", "refid", "trackingid", "trk"}
+
+
+def normalize_url(url: str) -> str:
+    """Canonical form of a URL, so cosmetic variants of one offer are saved only once."""
+    parts = urlsplit(url.strip())
+    query = sorted(
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if not key.lower().startswith("utm_") and key.lower() not in _TRACKING_PARAMS
+    )
+    path = parts.path.rstrip("/") or "/"
+    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), path, urlencode(query), ""))

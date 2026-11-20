@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -12,6 +12,9 @@ class JobOffer(Base):
     """A job offer added by a candidate, pasted as text or fetched from a URL (US08)."""
 
     __tablename__ = "job_offers"
+    __table_args__ = (
+        UniqueConstraint("user_id", "source_url", name="uq_job_offers_user_source_url"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(

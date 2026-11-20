@@ -371,3 +371,22 @@ def test_offer_gets_a_keywords_line_from_the_meta_tag() -> None:
     text = offer_fetcher.fetch_offer_text(OFFER_URL, transport=transport)
 
     assert text.endswith("Mots clés : Bestlab, Python, SQL")
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://Jobs.Example.com/offres/42/", "https://jobs.example.com/offres/42"),
+        (
+            "https://jobs.example.com/offres/42?utm_source=x&b=2&a=1#postuler",
+            "https://jobs.example.com/offres/42?a=1&b=2",
+        ),
+        ("https://jobs.example.com", "https://jobs.example.com/"),
+        (
+            "https://www.linkedin.com/jobs/?currentJobId=123&trackingId=abc",
+            "https://www.linkedin.com/jobs?currentJobId=123",
+        ),
+    ],
+)
+def test_normalize_url_makes_cosmetic_variants_identical(url: str, expected: str) -> None:
+    assert offer_fetcher.normalize_url(url) == expected
