@@ -261,9 +261,19 @@ def _ensure_unique_ids(items: list[ProfileItem]) -> None:
 
 
 class ProfileOut(BaseModel):
-    """What GET / PUT /api/profile/me return: the profile and where it comes from."""
+    """What the profile endpoints return: the profile and where it comes from."""
 
     profile: CandidateProfile
     source: str
     cv_document_id: uuid.UUID | None = None
     updated_at: datetime
+
+    @classmethod
+    def from_record(cls, record: Any) -> Self:
+        """Build from a `models.Profile` row."""
+        return cls(
+            profile=CandidateProfile.model_validate(record.data),
+            source=record.source,
+            cv_document_id=record.cv_document_id,
+            updated_at=record.updated_at,
+        )

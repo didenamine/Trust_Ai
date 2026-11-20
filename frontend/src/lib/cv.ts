@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios'
 import { api } from './api'
+import type { ProfileResponse } from './profile'
 
 // Keep in sync with MAX_UPLOAD_SIZE_MB on the backend (the API stays the final check).
 export const MAX_CV_SIZE_MB = 5
@@ -58,13 +59,30 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`
 }
 
-/** The API's error message (`detail`) if there is one, else a generic message. */
-export function uploadErrorMessage(error: unknown): string {
+/**
+ * US05: analyse the current CV with the AI and save the result as the profile.
+ * Takes a few seconds; replaces the existing profile.
+ */
+export async function analyzeCV(): Promise<ProfileResponse> {
+  const { data } = await api.post<ProfileResponse>('/cv/me/analyze')
+  return data
+}
+
+/** The API's error message (`detail`) if there is one, else `fallback`. */
+export function apiErrorMessage(error: unknown, fallback: string): string {
   if (isAxiosError(error)) {
     const detail = error.response?.data?.detail
     if (typeof detail === 'string') {
       return `${detail}.`
     }
   }
-  return "L'import a échoué. Veuillez réessayer."
+  return fallback
+}
+
+export function uploadErrorMessage(error: unknown): string {
+  return apiErrorMessage(error, "L'import a échoué. Veuillez réessayer.")
+}
+
+export function analysisErrorMessage(error: unknown): string {
+  return apiErrorMessage(error, "L'analyse du CV a échoué. Veuillez réessayer.")
 }
