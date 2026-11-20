@@ -5,14 +5,19 @@ import { useAuth } from '../context/AuthContext'
 import {
   ACCEPTED_CV_EXTENSIONS,
   MAX_CV_SIZE_MB,
+  analysisErrorMessage,
+  analyzeCV,
   fetchCurrentCV,
   formatFileSize,
   uploadCV,
   uploadErrorMessage,
   validateCVFile,
+  type CV,
 } from '../lib/cv'
+import { fetchMyProfile, type ProfileResponse } from '../lib/profile'
 
 const CV_QUERY_KEY = ['cv', 'me']
+const PROFILE_QUERY_KEY = ['profile', 'me']
 
 export default function CVUploadPage() {
   const { user, isLoading: isAuthLoading } = useAuth()
@@ -33,12 +38,20 @@ function CVUpload() {
   const [isDragging, setIsDragging] = useState(false)
 
   const currentCV = useQuery({ queryKey: CV_QUERY_KEY, queryFn: fetchCurrentCV })
+  const currentProfile = useQuery({ queryKey: PROFILE_QUERY_KEY, queryFn: fetchMyProfile })
+
+  // US05: the CV is analysed automatically right after the import.
+  const analysis = useMutation({
+    mutationFn: analyzeCV,
+    onSuccess: (profile) => queryClient.setQueryData(PROFILE_QUERY_KEY, profile),
+  })
 
   const upload = useMutation({
     mutationFn: uploadCV,
     onSuccess: (cv) => {
       queryClient.setQueryData(CV_QUERY_KEY, cv)
       setSelectedFile(null)
+      analysis.mutate()
     },
   })
 
@@ -142,6 +155,74 @@ function CVUpload() {
           {upload.isPending ? 'Import…' : cv ? 'Remplacer mon CV' : 'Importer mon CV'}
         </button>
       </form>
+
+      {cv && (
+        <CVAnalysis
+          cv={cv}
+          profile={currentProfile.data ?? null}
+          isPending={analysis.isPending}
+          error={analysis.isError ? analysisErrorMessage(analysis.error) : null}
+          onAnalyze={() => analysis.mutate()}
+        />
+      )}
     </section>
+  )
+}
+
+const LANGUAGE_LABELS = { fr: 'français', en: 'anglais' } as const
+
+function CVAnalysis({
+  cv,
+  profile,
+  isPending,
+  error,
+  onAnalyze,
+}: Readonly<{
+  cv: CV
+  profile: ProfileResponse | null
+  isPending: boolean
+  error: string | null
+  onAnalyze: () => void
+}>) {
+  // Only show a result that comes from the analysis of *this* CV.
+  const result =
+    profile?.source === 'cv_analysis' && profile.cv_document_id === cv.id ? profile.profile : null
+
+  return (
+    <div
+      className="space-y-3 rounded border border-slate-200 bg-white p-4"
+      aria-label="Analyse du CV"
+    >
+      <h2 className="font-semibold">Analyse du CV</h2>
+
+      {isPending ? (
+        <p role="status" className="text-sm text-slate-600">
+          Analyse de votre CV en cours… Cela peut prendre jusqu'à une minute.
+        </p>
+      ) : error ? (
+        <p className="text-sm text-red-600">{error}</p>
+      ) : result ? (
+        <div className="text-sm">
+          <p className="text-green-700">Votre CV a été analysé.</p>
+          <p className="text-slate-600">
+            CV en {LANGUAGE_LABELS[result.language]} : {result.skills.length} compétences,{' '}
+            {result.experiences.length} expériences, {result.education.length} formations,{' '}
+            {result.languages.length} langues.
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-slate-600">Ce CV n'a pas encore été analysé.</p>
+      )}
+
+      {!isPending && (
+        <button
+          type="button"
+          onClick={onAnalyze}
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium"
+        >
+          {result || error ? "Relancer l'analyse" : 'Analyser mon CV'}
+        </button>
+      )}
+    </div>
   )
 }

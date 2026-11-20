@@ -27,15 +27,48 @@ function apiError(status: number, detail?: string) {
   } as AxiosResponse)
 }
 
-function mockGet(currentCV: typeof STORED_CV | null) {
+function mockGet(currentCV: typeof STORED_CV | null, profile: object | null = null) {
   vi.mocked(api.get).mockImplementation(async (url: string) => {
     if (url === '/auth/me') return { data: ME }
     if (url === '/cv/me') {
       if (currentCV) return { data: currentCV }
       throw apiError(404, 'Aucun CV importé')
     }
+    if (url === '/profile/me') {
+      if (profile) return { data: profile }
+      throw apiError(404, 'Aucun profil')
+    }
     throw new Error(`unexpected GET ${url}`)
   })
+}
+
+/** A profile as returned by POST /cv/me/analyze for STORED_CV. */
+const ANALYSED_PROFILE = {
+  source: 'cv_analysis',
+  cv_document_id: STORED_CV.id,
+  updated_at: '2026-11-20T10:00:00Z',
+  profile: {
+    schema_version: 1,
+    language: 'fr',
+    personal_info: {
+      full_name: 'Sarra',
+      headline: null,
+      email: null,
+      phone: null,
+      location: null,
+      links: [],
+    },
+    summary: null,
+    skills: [
+      { name: 'Python', category: 'hard', level: null },
+      { name: 'React', category: 'hard', level: null },
+    ],
+    experiences: [{ job_title: 'Dev', start_date: null, end_date: null, is_current: false }],
+    education: [],
+    languages: [{ name: 'Arabe', code: 'ar', level: 'native' }],
+    certifications: [],
+    projects: [],
+  },
 }
 
 function renderPage() {
@@ -159,5 +192,87 @@ describe('US03 - import du CV', () => {
       )
       expect(screen.getByText("Vous n'avez pas encore importé de CV.")).toBeInTheDocument()
     })
+  })
+})
+
+describe('US05 - analyse automatique du CV', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('trustai.access_token', 'fake-token')
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+  })
+
+  it('analyses the CV automatically right after the import', async () => {
+    const user = userEvent.setup()
+    mockGet(null)
+    vi.mocked(api.post).mockImplementation(async (url: string) => {
+      if (url === '/cv') return { data: STORED_CV }
+      if (url === '/cv/me/analyze') return { data: ANALYSED_PROFILE }
+      throw new Error(`unexpected POST ${url}`)
+    })
+    renderPage()
+
+    await user.upload(await screen.findByLabelText('Fichier du CV'), pdfFile())
+    await user.click(screen.getByRole('button', { name: 'Importer mon CV' }))
+
+    expect(await screen.findByText('Votre CV a été analysé.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Analyse du CV')).toHaveTextContent(
+      'CV en français : 2 compétences, 1 expériences, 0 formations, 1 langues.',
+    )
+    expect(vi.mocked(api.post).mock.calls.map(([url]) => url)).toEqual(['/cv', '/cv/me/analyze'])
+  })
+
+  it('shows the result of a previous analysis of the current CV', async () => {
+    mockGet(STORED_CV, ANALYSED_PROFILE)
+    renderPage()
+
+    expect(await screen.findByText('Votre CV a été analysé.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: "Relancer l'analyse" })).toBeInTheDocument()
+    expect(api.post).not.toHaveBeenCalled()
+  })
+
+  it('does not show an analysis that belongs to an older CV', async () => {
+    mockGet(STORED_CV, { ...ANALYSED_PROFILE, cv_document_id: 'older-cv' })
+    renderPage()
+
+    expect(await screen.findByText("Ce CV n'a pas encore été analysé.")).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Analyser mon CV' })).toBeInTheDocument()
+  })
+
+  it("shows the API's message when the analysis fails, and lets the user retry", async () => {
+    const user = userEvent.setup()
+    mockGet(STORED_CV)
+    vi.mocked(api.post)
+      .mockRejectedValueOnce(
+        apiError(
+          422,
+          'Langue du CV non prise en charge : le CV doit être en français ou en anglais',
+        ),
+      )
+      .mockResolvedValueOnce({ data: ANALYSED_PROFILE })
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Analyser mon CV' }))
+    expect(
+      await screen.findByText(
+        'Langue du CV non prise en charge : le CV doit être en français ou en anglais.',
+      ),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: "Relancer l'analyse" }))
+    expect(await screen.findByText('Votre CV a été analysé.')).toBeInTheDocument()
+  })
+
+  it('shows a waiting message during the analysis', async () => {
+    const user = userEvent.setup()
+    mockGet(STORED_CV)
+    vi.mocked(api.post).mockReturnValue(new Promise(() => {}))
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Analyser mon CV' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Analyse de votre CV en cours')
+    expect(screen.queryByRole('button', { name: /analyse/i })).not.toBeInTheDocument()
   })
 })
