@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import RequireAuth from './components/RequireAuth'
+import AddOfferPage from './pages/AddOfferPage'
 
 // Routing is owned by Ikram (React Router). Add new pages here.
 export default function App() {
@@ -17,6 +19,9 @@ export default function App() {
         <Route path="connexion" element={<LoginPage />} />
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="offres/nouvelle" element={<AddOfferPage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
