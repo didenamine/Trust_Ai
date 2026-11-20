@@ -8,6 +8,7 @@ Import every model module here so that `Base.metadata` knows about it
 
 from app.db.base import Base
 from app.models.cv_document import CVDocument  # noqa: F401
+from app.models.profile import Profile  # noqa: F401
 from app.models.user import User  # noqa: F401
 
-__all__ = ["Base", "CVDocument", "User"]
+__all__ = ["Base", "CVDocument", "Profile", "User"]
