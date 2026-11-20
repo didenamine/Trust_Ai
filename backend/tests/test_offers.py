@@ -160,16 +160,21 @@ def test_url_variants_are_the_same_offer(db_client: TestClient, monkeypatch) -> 
     assert len(calls) == 1
 
 
-def test_two_users_can_save_the_same_url(db_client: TestClient, monkeypatch) -> None:
-    _count_fetches(monkeypatch)
+def test_two_users_share_one_offer_for_the_same_url(db_client: TestClient, monkeypatch) -> None:
+    calls = _count_fetches(monkeypatch)
     alice = _auth_headers(db_client, "alice@example.com")
     bob = _auth_headers(db_client, "bob@example.com")
+    carol = _auth_headers(db_client, "carol@example.com")
 
     first = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=alice)
     second = db_client.post("/api/offers", json={"url": OFFER_URL}, headers=bob)
 
     assert first.status_code == second.status_code == 201
-    assert first.json()["id"] != second.json()["id"]
+    assert first.json()["id"] == second.json()["id"]  # one stored offer
+    assert len(calls) == 1  # the page is downloaded only once
+    assert len(db_client.get("/api/offers", headers=alice).json()) == 1
+    assert len(db_client.get("/api/offers", headers=bob).json()) == 1
+    assert db_client.get("/api/offers", headers=carol).json() == []
 
 
 def test_create_offer_accepts_any_pasted_text(db_client: TestClient) -> None:
