@@ -4,9 +4,18 @@ import json
 from pathlib import Path
 
 from app.schemas.matching import MatchingBand
-from app.schemas.offer_analysis import EducationRequirement, ExperienceRequirement, OfferRequirements
+from app.schemas.offer_analysis import (
+    EducationRequirement,
+    ExperienceRequirement,
+    OfferRequirements,
+)
 from app.schemas.profile import CandidateProfile
-from app.schemas.shared import ContentLanguage, EducationLevel, EmploymentType, Skill, SkillCategory
+from app.schemas.shared import (
+    ContentLanguage,
+    EducationLevel,
+    Skill,
+    SkillCategory,
+)
 from app.services.matching_service import (
     EDUCATION_WEIGHT,
     EXPERIENCE_WEIGHT,

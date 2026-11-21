@@ -12,9 +12,8 @@ Reused by:
 """
 
 from enum import StrEnum
-from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from app.schemas.shared import EducationLevel, SchemaModel, ShortText, SkillCategory
 

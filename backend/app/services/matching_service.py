@@ -19,7 +19,7 @@ from app.schemas.matching import (
 )
 from app.schemas.offer_analysis import OfferRequirements
 from app.schemas.profile import CandidateProfile
-from app.schemas.shared import EducationLevel, Skill, normalize_skill_name
+from app.schemas.shared import Skill, normalize_skill_name
 
 SKILLS_WEIGHT = 50
 EXPERIENCE_WEIGHT = 30
@@ -47,9 +47,12 @@ def _match_skill(req_key: str, candidate_keys: set[str]) -> bool:
         if req_clean and req_clean == cand_clean:
             return True
 
-        if len(req_clean) >= 3 and len(cand_clean) >= 3:
-            if req_clean in cand_clean or cand_clean in req_clean:
-                return True
+        if (
+            len(req_clean) >= 3
+            and len(cand_clean) >= 3
+            and (req_clean in cand_clean or cand_clean in req_clean)
+        ):
+            return True
 
     return False
 
@@ -135,7 +138,7 @@ def _compute_education_matching(
     req_levels = [
         edu.level for edu in requirements.education if edu.level is not None
     ]
-    required_level = max(req_levels, key=lambda l: l.rank) if req_levels else None
+    required_level = max(req_levels, key=lambda lvl: lvl.rank) if req_levels else None
 
     # Candidate's highest level
     candidate_level = profile.highest_education_level()

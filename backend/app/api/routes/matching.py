@@ -44,11 +44,11 @@ def get_offer_matching(
         analysis = offer_analysis_service.get_analysis(
             db, offer_id=offer_id, user_id=current_user.id
         )
-    except offer_analysis_service.OfferNotInListError:
+    except offer_analysis_service.OfferNotInListError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Offre introuvable dans votre liste.",
-        )
+        ) from exc
 
     if analysis is None:
         raise HTTPException(
