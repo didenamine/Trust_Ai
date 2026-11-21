@@ -45,7 +45,7 @@ export default function MatchingExplanationPanel({ matching }: { matching: Match
         <div>
           <h3 className="text-base font-semibold text-slate-900">Score de compatibilité</h3>
           <p className="text-xs text-slate-500">
-            Calculé sur la base de vos compétences, votre expérience et votre niveau d'études.
+            Calculé sur la base de vos compétences, votre expérience et votre niveau d&apos;études.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -142,11 +142,11 @@ export default function MatchingExplanationPanel({ matching }: { matching: Match
             ))}
           </ul>
           {details.matched_skills.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5 pt-2 border-t border-emerald-200/60">
+            <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-emerald-200/60 pt-2">
               {details.matched_skills.map((s) => (
                 <span
                   key={s.name}
-                  className="rounded bg-white px-2 py-0.5 text-xs font-medium text-emerald-800 border border-emerald-200 shadow-sm"
+                  className="rounded border border-emerald-200 bg-white px-2 py-0.5 text-xs font-medium text-emerald-800 shadow-sm"
                 >
                   ✓ {s.name}
                 </span>
@@ -173,7 +173,7 @@ export default function MatchingExplanationPanel({ matching }: { matching: Match
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
               />
             </svg>
-            Compétences manquantes & axes d'amélioration
+            Compétences manquantes &amp; axes d&apos;amélioration
           </h4>
           {improvements.length > 0 && (
             <ul className="mt-2 space-y-1 text-amber-900">
@@ -186,11 +186,11 @@ export default function MatchingExplanationPanel({ matching }: { matching: Match
             </ul>
           )}
           {details.missing_skills.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5 pt-2 border-t border-amber-200/60">
+            <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-amber-200/60 pt-2">
               {details.missing_skills.map((s) => (
                 <span
                   key={s.name}
-                  className="rounded bg-white px-2 py-0.5 text-xs font-medium text-amber-800 border border-amber-200 shadow-sm"
+                  className="rounded border border-amber-200 bg-white px-2 py-0.5 text-xs font-medium text-amber-800 shadow-sm"
                 >
                   ✕ {s.name}
                 </span>
