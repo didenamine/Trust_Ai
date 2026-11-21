@@ -227,8 +227,8 @@ def test_repeated_manual_saves_keep_one_profile(
         ({"language": "fr", "personal_info": {"links": ["http://"]}}, "URL invalide"),
         ({"language": "fr", "personal_info": {"full_name": "Sarra123"}}, "nom avec chiffres"),
         (
-            {"language": "fr", "personal_info": {"phone": "12345678"}},
-            "téléphone au mauvais format",
+            {"language": "fr", "personal_info": {"phone": "abc"}},
+            "téléphone invalide",
         ),
         ({"language": "fr", "personal_info": {"phone": "1" * 51}}, "téléphone trop long"),
         (

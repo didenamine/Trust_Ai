@@ -213,8 +213,10 @@ export const EMPLOYMENT_TYPE_VALUES = [
 
 const PARTIAL_DATE_RE = /^(19|20)\d{2}(-(0[1-9]|1[0-2]))?$/
 const LANGUAGE_CODE_RE = /^[a-z]{2}$/
-const FULL_NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M} '\-’]*$/u
+const FULL_NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M} '\-’.]*$/u
 const TUNISIAN_PHONE_RE = /^\+216 \d{2} \d{3} \d{3}$/
+// Foreign numbers, e.g. from an analysed CV (US05): +33 6 12 34 56 78, +1 (415) 555-0100.
+const INTERNATIONAL_PHONE_RE = /^\+(?!216)\d[\d\s().\-/]{6,24}$/
 
 /** The backend accepts bare domains ("github.com/me") and adds https itself. */
 export function normalizeProfileUrl(value: string): string {
@@ -243,7 +245,7 @@ const optionalFullName = optionalText(200).refine(
 )
 
 const optionalPhone = optionalText(50).refine(
-  (value) => value === '' || TUNISIAN_PHONE_RE.test(value),
+  (value) => value === '' || TUNISIAN_PHONE_RE.test(value) || INTERNATIONAL_PHONE_RE.test(value),
   'Format attendu : +216 00 000 000',
 )
 

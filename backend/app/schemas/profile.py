@@ -54,12 +54,15 @@ def _add_url_scheme(value: Any) -> Any:
 Url = Annotated[HttpUrl, BeforeValidator(_add_url_scheme)]
 OptionalUrl = Annotated[Url | None, BeforeValidator(blank_to_none)]
 
-_FULL_NAME_SEPARATORS = {" ", "-", "'", "’"}
-_PHONE_RE = re.compile(r"^\+216 \d{2} \d{3} \d{3}$")
+_FULL_NAME_SEPARATORS = {" ", "-", "'", "’", "."}  # "." for initials: "S. Ben Ali", "Jr."
+# Characters a phone number is written with on a CV: +216 20 000 000, (+33) 6.12.34.56.78...
+_PHONE_CHARS_RE = re.compile(r"^\+?[\d\s().\-/]+$")
+# A Tunisian number: 8 digits (first digit 2-9), optionally preceded by +216 / 00216.
+_TUNISIAN_PHONE_RE = re.compile(r"^(?:\+216|00216)?([2-9]\d{7})$")
 
 
 def _validate_full_name(value: Any) -> Any:
-    """Letters (with accents), spaces, hyphens and apostrophes; no digits."""
+    """Letters (with accents), spaces, hyphens, apostrophes and periods; no digits."""
     if not isinstance(value, str):
         return value
     name = unicodedata.normalize("NFC", value).strip()
@@ -72,9 +75,24 @@ def _validate_full_name(value: Any) -> Any:
 
 
 def _validate_phone(value: Any) -> Any:
-    if isinstance(value, str) and not _PHONE_RE.fullmatch(value.strip()):
-        raise ValueError("Format attendu : +216 00 000 000")
-    return value.strip() if isinstance(value, str) else value
+    """Any real phone number, so numbers extracted from CVs (US05) are kept.
+
+    Tunisian numbers are stored in one format, "+216 20 000 000", which is also the
+    format the manual-entry form (US06) requires; foreign numbers are kept as written.
+    The strict Tunisian format is checked in the form only: enforcing it here would
+    erase the phones of CVs written differently and break profiles saved before.
+    """
+    if not isinstance(value, str):
+        return value
+    phone = " ".join(value.split())
+    digits = re.sub(r"\D", "", phone)
+    if not _PHONE_CHARS_RE.fullmatch(phone) or not 8 <= len(digits) <= 15:
+        raise ValueError("Numéro de téléphone invalide")
+    compact = re.sub(r"[\s().\-/]", "", phone)
+    if match := _TUNISIAN_PHONE_RE.fullmatch(compact):
+        local = match.group(1)
+        return f"+216 {local[:2]} {local[2:5]} {local[5:]}"
+    return phone
 
 
 FullName = Annotated[str, BeforeValidator(_validate_full_name), Field(min_length=1, max_length=200)]

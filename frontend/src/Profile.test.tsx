@@ -216,6 +216,33 @@ describe('US06 - saisie manuelle du profil', () => {
       expect(api.put).not.toHaveBeenCalled()
     })
 
+    it('saves an analysed profile whose CV has a foreign phone and an initial', async () => {
+      // Regression: the form must not block profiles coming from a CV (US05).
+      const user = userEvent.setup()
+      mockGet({
+        ...CV_PROFILE,
+        profile: {
+          ...CV_PROFILE.profile,
+          personal_info: {
+            ...CV_PROFILE.profile.personal_info,
+            full_name: 'S. Benali',
+            phone: '+33 6 12 34 56 78',
+          },
+        },
+      })
+      vi.mocked(api.put).mockImplementation(async (_url: string, body?: unknown) =>
+        savedResponse(body),
+      )
+      renderPage()
+
+      await user.click(await screen.findByRole('button', { name: 'Enregistrer mon profil' }))
+
+      expect(await screen.findByText('Votre profil a bien été enregistré.')).toBeInTheDocument()
+      expect(vi.mocked(api.put).mock.calls[0][1]).toMatchObject({
+        personal_info: { full_name: 'S. Benali', phone: '+33 6 12 34 56 78' },
+      })
+    })
+
     it('rejects an invalid date and a missing skill name', async () => {
       const user = userEvent.setup()
       mockGet(null)

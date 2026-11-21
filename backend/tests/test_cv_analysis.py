@@ -301,3 +301,17 @@ def test_too_long_values_are_shortened() -> None:
 def test_answer_that_cannot_be_repaired() -> None:
     with pytest.raises(LLMResponseError):
         parse_llm_profile({"skills": "not a list"}, ContentLanguage.FR)
+
+
+def test_phones_and_names_written_differently_are_kept() -> None:
+    # Regression: a strict "+216 00 000 000" rule in the schema erased these.
+    profile = parse(
+        personal_info__full_name="S. Ben Ali",
+        personal_info__phone="+21620000000",
+    )
+    assert profile["personal_info"]["full_name"] == "S. Ben Ali"
+    assert profile["personal_info"]["phone"] == "+216 20 000 000"
+
+    assert parse(personal_info__phone="+33 6 12 34 56 78")["personal_info"]["phone"] == (
+        "+33 6 12 34 56 78"
+    )
