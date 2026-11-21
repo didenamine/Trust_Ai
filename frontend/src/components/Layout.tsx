@@ -27,6 +27,12 @@ export default function Layout() {
                   <Link to="/mon-profil" className="text-blue-600 underline">
                     Mon profil
                   </Link>
+                  <Link to="/offres" className="text-blue-600 underline">
+                    Mes offres
+                  </Link>
+                  <Link to="/offres/nouvelle" className="text-blue-600 underline">
+                    Ajouter une offre
+                  </Link>
                   <span className="text-slate-600">{user.email}</span>
                   <button onClick={handleLogout} className="text-blue-600 underline">
                     Se déconnecter
