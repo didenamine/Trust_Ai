@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { ATS_QUERY_KEY, analyzeCVForATS, atsErrorMessage } from '../lib/ats'
 import {
   ACCEPTED_CV_EXTENSIONS,
   MAX_CV_SIZE_MB,
@@ -55,8 +56,19 @@ function CVUpload() {
     mutationFn: uploadCV,
     onSuccess: (cv) => {
       queryClient.setQueryData(CV_QUERY_KEY, cv)
+      // An ATS result always belongs to one uploaded file: forget the old one.
+      queryClient.setQueryData(ATS_QUERY_KEY, null)
       setSelectedFile(null)
       analysis.mutate()
+    },
+  })
+
+  // US24: manual ATS analysis only; never run it automatically after an upload.
+  const atsAnalysis = useMutation({
+    mutationFn: analyzeCVForATS,
+    onSuccess: (result) => {
+      queryClient.setQueryData(ATS_QUERY_KEY, result)
+      navigate('/analyse-ats')
     },
   })
 
@@ -168,13 +180,20 @@ function CVUpload() {
       </form>
 
       {cv && (
-        <CVAnalysis
-          cv={cv}
-          profile={currentProfile.data ?? null}
-          isPending={analysis.isPending}
-          error={analysis.isError ? analysisErrorMessage(analysis.error) : null}
-          onAnalyze={() => analysis.mutate()}
-        />
+        <>
+          <CVAnalysis
+            cv={cv}
+            profile={currentProfile.data ?? null}
+            isPending={analysis.isPending}
+            error={analysis.isError ? analysisErrorMessage(analysis.error) : null}
+            onAnalyze={() => analysis.mutate()}
+          />
+          <ATSCard
+            isPending={atsAnalysis.isPending}
+            error={atsAnalysis.isError ? atsErrorMessage(atsAnalysis.error) : null}
+            onAnalyze={() => atsAnalysis.mutate()}
+          />
+        </>
       )}
     </section>
   )
@@ -234,6 +253,45 @@ function CVAnalysis({
           {result || error ? "Relancer l'analyse" : 'Analyser mon CV'}
         </button>
       )}
+    </div>
+  )
+}
+
+/** US24: manual ATS check, kept separate from the US05 profile extraction. */
+function ATSCard({
+  isPending,
+  error,
+  onAnalyze,
+}: Readonly<{
+  isPending: boolean
+  error: string | null
+  onAnalyze: () => void
+}>) {
+  return (
+    <div className="space-y-3 rounded border border-slate-200 bg-white p-4" aria-label="Score ATS">
+      <h2 className="font-semibold">Score ATS</h2>
+      <p className="text-sm text-slate-600">
+        Vérifiez les sections, la qualité des mots-clés et la lisibilité de votre CV par un logiciel
+        de recrutement. L'analyse est manuelle : aucun poste n'est comparé à votre CV.
+      </p>
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={onAnalyze}
+          disabled={isPending}
+          className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {isPending ? 'Calcul du score en cours…' : 'Vérifier le score ATS'}
+        </button>
+        <Link to="/analyse-ats" className="text-sm text-blue-600 underline">
+          Voir le rapport ATS
+        </Link>
+      </div>
     </div>
   )
 }

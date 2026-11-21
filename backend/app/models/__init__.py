@@ -7,9 +7,10 @@ Import every model module here so that `Base.metadata` knows about it
 """
 
 from app.db.base import Base
+from app.models.ats_analysis import ATSAnalysis  # noqa: F401
 from app.models.cv_document import CVDocument  # noqa: F401
 from app.models.job_offer import JobOffer, UserOffer  # noqa: F401
 from app.models.profile import Profile  # noqa: F401
 from app.models.user import User  # noqa: F401
 
-__all__ = ["Base", "CVDocument", "JobOffer", "Profile", "User", "UserOffer"]
+__all__ = ["ATSAnalysis", "Base", "CVDocument", "JobOffer", "Profile", "User", "UserOffer"]
