@@ -49,18 +49,20 @@ describe('US13 - Explication du matching (MatchingExplanationPanel)', () => {
     expect(screen.getByText('84%')).toBeInTheDocument()
     expect(screen.getByText(/Excellente compatibilité/)).toBeInTheDocument()
 
-    // Dimensions
-    expect(screen.getByText(/Compétences/)).toBeInTheDocument()
-    expect(screen.getByText(/Expérience/)).toBeInTheDocument()
-    expect(screen.getByText(/Formation/)).toBeInTheDocument()
+    // Dimensions — exact text to avoid matching the "Compétences manquantes" heading
+    expect(screen.getByText('Compétences')).toBeInTheDocument()
+    expect(screen.getByText('Expérience')).toBeInTheDocument()
+    expect(screen.getByText('Formation')).toBeInTheDocument()
 
-    // Strengths (US13)
+    // Strengths section heading (US13)
     expect(screen.getByText(/Points forts/)).toBeInTheDocument()
+
+    // Matched skill badges rendered as "✓ <name>"
     expect(screen.getByText(/Python/)).toBeInTheDocument()
     expect(screen.getByText(/FastAPI/)).toBeInTheDocument()
     expect(screen.getByText(/React/)).toBeInTheDocument()
 
-    // Missing skills & improvements (US13)
+    // Missing skills section heading & badge (US13)
     expect(screen.getByText(/Compétences manquantes/)).toBeInTheDocument()
     expect(screen.getByText(/AWS Cloud/)).toBeInTheDocument()
   })
