@@ -43,7 +43,8 @@ class Settings(BaseSettings):
     # JWT (US01)
     jwt_secret: str = "change-me"
     jwt_expires_minutes: int = 60
-    password_reset_expires_minutes: int = 30
+    # Short-lived on purpose: a reset token grants a password change with no other check.
+    password_reset_expires_minutes: int = 15
 
     @property
     def database_url(self) -> URL:

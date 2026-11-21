@@ -1,9 +1,14 @@
+from datetime import UTC, datetime, timedelta
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import get_settings
+from app.core.security import PASSWORD_RESET_TOKEN_TYPE
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -143,3 +148,42 @@ def test_password_reset_confirm_with_invalid_token_is_rejected(client: TestClien
         json={"token": "not-a-jwt", "new_password": "NewPassw0rd!"},
     )
     assert response.status_code == 400
+
+
+def test_password_reset_confirm_with_expired_token_is_rejected(client: TestClient) -> None:
+    client.post(
+        "/api/auth/register", json={"email": "expired@example.com", "password": "OldPassw0rd!"}
+    )
+    login = client.post(
+        "/api/auth/login", json={"email": "expired@example.com", "password": "OldPassw0rd!"}
+    )
+    me = client.get(
+        "/api/auth/me", headers={"Authorization": f"Bearer {login.json()['access_token']}"}
+    ).json()
+
+    # Built directly (not via the 15-minute-lived endpoint) so the test doesn't need to wait.
+    now = datetime.now(UTC)
+    expired_token = jwt.encode(
+        {
+            "sub": me["id"],
+            "type": PASSWORD_RESET_TOKEN_TYPE,
+            "iat": now - timedelta(minutes=20),
+            "exp": now - timedelta(minutes=5),
+        },
+        get_settings().jwt_secret,
+        algorithm="HS256",
+    )
+
+    response = client.post(
+        "/api/auth/password-reset/confirm",
+        json={"token": expired_token, "new_password": "NewPassw0rd!"},
+    )
+
+    assert response.status_code == 400
+    # The old password still works: the expired token changed nothing.
+    assert (
+        client.post(
+            "/api/auth/login", json={"email": "expired@example.com", "password": "OldPassw0rd!"}
+        ).status_code
+        == 200
+    )
