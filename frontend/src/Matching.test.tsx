@@ -17,9 +17,7 @@ const sampleMatching: MatchingResult = {
       { name: 'FastAPI', category: 'hard', matched: true },
       { name: 'React', category: 'hard', matched: true },
     ],
-    missing_skills: [
-      { name: 'AWS Cloud', category: 'hard', matched: false },
-    ],
+    missing_skills: [{ name: 'AWS Cloud', category: 'hard', matched: false }],
     experience: {
       candidate_years: 1.8,
       required_years: 2.0,
@@ -61,20 +59,14 @@ describe('US13 - Explication du matching (MatchingExplanationPanel)', () => {
 
     // Strengths (US13)
     expect(screen.getByText('Points forts')).toBeInTheDocument()
-    expect(
-      screen.getByText(/3 compétence\(s\) requise\(s\) validée\(s\)/)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/3 compétence\(s\) requise\(s\) validée\(s\)/)).toBeInTheDocument()
     expect(screen.getByText('✓ Python')).toBeInTheDocument()
     expect(screen.getByText('✓ FastAPI')).toBeInTheDocument()
     expect(screen.getByText('✓ React')).toBeInTheDocument()
 
     // Missing skills & improvements (US13)
-    expect(
-      screen.getByText('Compétences manquantes & axes d’amélioration')
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/1 compétence\(s\) demandée\(s\) manquante\(s\)/)
-    ).toBeInTheDocument()
+    expect(screen.getByText('Compétences manquantes & axes d’amélioration')).toBeInTheDocument()
+    expect(screen.getByText(/1 compétence\(s\) demandée\(s\) manquante\(s\)/)).toBeInTheDocument()
     expect(screen.getByText('✕ AWS Cloud')).toBeInTheDocument()
   })
 })

@@ -1,6 +1,9 @@
 import type { MatchingBand, MatchingResult } from '../lib/matching'
 
-const BAND_STYLES: Record<MatchingBand, { bg: string; text: string; border: string; label: string }> = {
+const BAND_STYLES: Record<
+  MatchingBand,
+  { bg: string; text: string; border: string; label: string }
+> = {
   excellent: {
     bg: 'bg-emerald-50',
     text: 'text-emerald-700',
@@ -121,7 +124,12 @@ export default function MatchingExplanationPanel({ matching }: { matching: Match
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             Points forts
           </h4>

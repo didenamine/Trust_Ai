@@ -44,11 +44,15 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       setMatchingError(null)
     },
     onError: (error: unknown) => {
-      let msg = 'Impossible de calculer la compatibilité. Vérifiez que votre profil candidat est créé.'
+      let msg =
+        'Impossible de calculer la compatibilité. Vérifiez que votre profil candidat est créé.'
       if (typeof error === 'object' && error !== null && 'response' in error) {
         const resp = (error as { response?: { data?: { detail?: string } } }).response
         if (resp?.data?.detail) {
-          msg = typeof resp.data.detail === 'string' ? resp.data.detail : JSON.stringify(resp.data.detail)
+          msg =
+            typeof resp.data.detail === 'string'
+              ? resp.data.detail
+              : JSON.stringify(resp.data.detail)
         }
       }
       setMatchingError(msg)
