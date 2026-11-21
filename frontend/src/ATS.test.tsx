@@ -329,8 +329,18 @@ describe('US24 - analyse ATS du CV importé', () => {
 
   it('exposes the manual action on /mon-cv and navigates to the report', async () => {
     const user = userEvent.setup()
+    // Like the real backend: once analysed, GET /ats/me returns the saved result
+    // (the report page reloads it, which raced with the assertion below).
+    let saved: typeof ATS | null = null
     mockGet()
-    vi.mocked(api.post).mockResolvedValue({ data: ATS })
+    const baseGet = vi.mocked(api.get).getMockImplementation()!
+    vi.mocked(api.get).mockImplementation(async (url: string) =>
+      url === '/ats/me' && saved ? { data: saved } : baseGet(url),
+    )
+    vi.mocked(api.post).mockImplementation(async () => {
+      saved = ATS
+      return { data: ATS }
+    })
     renderPage('/mon-cv')
 
     await user.click(await screen.findByRole('button', { name: 'Vérifier le score ATS' }))
