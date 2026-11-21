@@ -63,7 +63,21 @@ const ANALYSED_PROFILE = {
       { name: 'Python', category: 'hard', level: null },
       { name: 'React', category: 'hard', level: null },
     ],
-    experiences: [{ job_title: 'Dev', start_date: null, end_date: null, is_current: false }],
+    experiences: [
+      {
+        id: 'exp-1',
+        job_title: 'Dev',
+        company: null,
+        location: null,
+        employment_type: null,
+        start_date: null,
+        end_date: null,
+        is_current: false,
+        description: null,
+        achievements: [],
+        skills: [],
+      },
+    ],
     education: [],
     languages: [{ name: 'Arabe', code: 'ar', level: 'native' }],
     certifications: [],
@@ -252,7 +266,9 @@ describe('US05 - analyse automatique du CV', () => {
     await user.click(screen.getByRole('button', { name: 'Importer mon CV' }))
 
     expect(await screen.findByRole('heading', { name: 'Mon profil' })).toBeInTheDocument()
-    expect(await screen.findByLabelText('Nom complet')).toHaveValue('Sarra')
+    // US07: the analysed profile is shown read-only for review.
+    expect(await screen.findByLabelText('Identité')).toHaveTextContent('Sarra')
+    expect(screen.getByRole('button', { name: 'Modifier mon profil' })).toBeInTheDocument()
     expect(vi.mocked(api.post).mock.calls.map(([url]) => url)).toEqual(['/cv', '/cv/me/analyze'])
   })
 

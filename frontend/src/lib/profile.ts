@@ -146,6 +146,93 @@ export async function saveMyProfile(profile: CandidateProfile): Promise<ProfileR
   return data
 }
 
+// --- Display helpers (US07: consulting the profile) --------------------------
+
+const MONTHS_FR = [
+  'janvier',
+  'février',
+  'mars',
+  'avril',
+  'mai',
+  'juin',
+  'juillet',
+  'août',
+  'septembre',
+  'octobre',
+  'novembre',
+  'décembre',
+]
+
+/** "2021-03" → "mars 2021", "2021" → "2021". */
+export function formatPartialDate(value: PartialDate): string {
+  const [year, month] = value.split('-')
+  return month ? `${MONTHS_FR[Number(month) - 1]} ${year}` : year
+}
+
+/** "mars 2021 – aujourd'hui", "2019 – 2022", or null when no date is known. */
+export function formatPeriod(item: {
+  start_date: PartialDate | null
+  end_date: PartialDate | null
+  is_current: boolean
+}): string | null {
+  const start = item.start_date ? formatPartialDate(item.start_date) : null
+  const end = item.is_current
+    ? "aujourd'hui"
+    : item.end_date
+      ? formatPartialDate(item.end_date)
+      : null
+  if (start && end) return `${start} – ${end}`
+  return start ?? end
+}
+
+function absoluteMonth(value: PartialDate, bound: 'start' | 'end'): number {
+  const [year, month] = value.split('-').map(Number)
+  return year * 12 + (month ? month - 1 : bound === 'start' ? 0 : 11)
+}
+
+/**
+ * Months of professional experience, counted like the backend
+ * (`CandidateProfile.total_experience_months`): overlapping jobs once, volunteering
+ * excluded, entries without a measurable period ignored.
+ */
+export function totalExperienceMonths(profile: CandidateProfile, today = new Date()): number {
+  const periods = profile.experiences
+    .filter((experience) => experience.employment_type !== 'volunteer' && experience.start_date)
+    .map((experience) => {
+      const start = absoluteMonth(experience.start_date as string, 'start')
+      const end = experience.is_current
+        ? today.getFullYear() * 12 + today.getMonth() + 1
+        : experience.end_date
+          ? absoluteMonth(experience.end_date, 'end') + 1
+          : null
+      return end !== null && end > start ? ([start, end] as const) : null
+    })
+    .filter((period): period is readonly [number, number] => period !== null)
+    .sort((a, b) => a[0] - b[0])
+
+  let total = 0
+  let current: [number, number] | null = null
+  for (const [start, end] of periods) {
+    if (current && start <= current[1]) {
+      current[1] = Math.max(current[1], end)
+    } else {
+      if (current) total += current[1] - current[0]
+      current = [start, end]
+    }
+  }
+  return current ? total + current[1] - current[0] : total
+}
+
+/** 27 → "2 ans et 3 mois", 5 → "5 mois", 12 → "1 an". */
+export function formatDuration(months: number): string {
+  const years = Math.floor(months / 12)
+  const rest = months % 12
+  const yearText = years ? `${years} an${years > 1 ? 's' : ''}` : ''
+  const monthText = rest ? `${rest} mois` : ''
+  if (yearText && monthText) return `${yearText} et ${monthText}`
+  return yearText || monthText || 'moins d’un mois'
+}
+
 // --- French labels for display (US06, US07, US31) ----------------------------
 
 export const SKILL_CATEGORY_LABELS: Record<SkillCategory, string> = {
