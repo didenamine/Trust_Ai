@@ -1,7 +1,7 @@
 """US09: create the offer_analyses table
 
 Revision ID: f1e2d3c4b5a6
-Revises: e4d5f6a7b8c9
+Revises: f5a6b7c8d9e0
 Create Date: 2026-11-21 00:00:00
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "f1e2d3c4b5a6"
-down_revision: str | None = "e4d5f6a7b8c9"
+down_revision: str | None = "f5a6b7c8d9e0"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
