@@ -14,6 +14,8 @@ They must play no part in matching, so the profile never stores them.
 See docs/PROFIL.md for the field-by-field description.
 """
 
+import re
+import unicodedata
 import uuid
 from datetime import date, datetime
 from typing import Annotated, Any, Literal, Self
@@ -51,6 +53,35 @@ def _add_url_scheme(value: Any) -> Any:
 
 Url = Annotated[HttpUrl, BeforeValidator(_add_url_scheme)]
 OptionalUrl = Annotated[Url | None, BeforeValidator(blank_to_none)]
+
+_FULL_NAME_SEPARATORS = {" ", "-", "'", "’"}
+_PHONE_RE = re.compile(r"^\+216 \d{2} \d{3} \d{3}$")
+
+
+def _validate_full_name(value: Any) -> Any:
+    """Letters (with accents), spaces, hyphens and apostrophes; no digits."""
+    if not isinstance(value, str):
+        return value
+    name = unicodedata.normalize("NFC", value).strip()
+    letters = [char for char in name if char.isalpha()]
+    if not letters or any(
+        not char.isalpha() and char not in _FULL_NAME_SEPARATORS for char in name
+    ):
+        raise ValueError("Le nom complet ne doit contenir que des lettres")
+    return name
+
+
+def _validate_phone(value: Any) -> Any:
+    if isinstance(value, str) and not _PHONE_RE.fullmatch(value.strip()):
+        raise ValueError("Format attendu : +216 00 000 000")
+    return value.strip() if isinstance(value, str) else value
+
+
+FullName = Annotated[str, BeforeValidator(_validate_full_name), Field(min_length=1, max_length=200)]
+OptionalFullName = Annotated[FullName | None, BeforeValidator(blank_to_none)]
+
+Phone = Annotated[str, BeforeValidator(_validate_phone), Field(min_length=1, max_length=50)]
+OptionalPhone = Annotated[Phone | None, BeforeValidator(blank_to_none)]
 
 
 def _new_id() -> str:
@@ -106,13 +137,11 @@ class DatedItem(ProfileItem):
 
 
 class PersonalInfo(SchemaModel):
-    full_name: OptionalShortText = None
+    full_name: OptionalFullName = None
     headline: OptionalShortText = None
     """The job title the candidate presents themselves with, e.g. "Développeur full-stack"."""
     email: Annotated[EmailStr | None, BeforeValidator(blank_to_none)] = None
-    phone: Annotated[
-        Annotated[str, Field(min_length=1, max_length=50)] | None, BeforeValidator(blank_to_none)
-    ] = None
+    phone: OptionalPhone = None
     location: OptionalShortText = None
     links: Annotated[list[Url], Field(max_length=10)] = []
     """LinkedIn, GitHub, portfolio..."""

@@ -213,6 +213,8 @@ export const EMPLOYMENT_TYPE_VALUES = [
 
 const PARTIAL_DATE_RE = /^(19|20)\d{2}(-(0[1-9]|1[0-2]))?$/
 const LANGUAGE_CODE_RE = /^[a-z]{2}$/
+const FULL_NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M} '\-’]*$/u
+const TUNISIAN_PHONE_RE = /^\+216 \d{2} \d{3} \d{3}$/
 
 /** The backend accepts bare domains ("github.com/me") and adds https itself. */
 export function normalizeProfileUrl(value: string): string {
@@ -234,6 +236,16 @@ const requiredText = (max: number, label: string) =>
   z.string().trim().min(1, `${label} requis`).max(max, `${max} caractères maximum`)
 
 const optionalText = (max: number) => z.string().trim().max(max, `${max} caractères maximum`)
+
+const optionalFullName = optionalText(200).refine(
+  (value) => value === '' || FULL_NAME_RE.test(value),
+  'Le nom complet ne doit contenir que des lettres',
+)
+
+const optionalPhone = optionalText(50).refine(
+  (value) => value === '' || TUNISIAN_PHONE_RE.test(value),
+  'Format attendu : +216 00 000 000',
+)
 
 const optionalDate = z
   .string()
@@ -368,10 +380,10 @@ export const profileFormSchema = z.object({
   schema_version: z.literal(1),
   language: z.enum(CONTENT_LANGUAGE_VALUES),
   personal_info: z.object({
-    full_name: optionalText(200),
+    full_name: optionalFullName,
     headline: optionalText(200),
     email: optionalEmail,
-    phone: optionalText(50),
+    phone: optionalPhone,
     location: optionalText(200),
     links: z.array(requiredUrl).max(10, '10 liens maximum'),
   }),

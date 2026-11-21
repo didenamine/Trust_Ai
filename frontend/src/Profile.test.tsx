@@ -145,6 +145,7 @@ describe('US06 - saisie manuelle du profil', () => {
 
       await user.type(await screen.findByLabelText('Nom complet'), 'Sarra Benali')
       await user.type(screen.getByLabelText('E-mail'), 'sarra@example.fr')
+      await user.type(screen.getByLabelText('Téléphone'), '+216 20 000 000')
       await user.click(screen.getByRole('button', { name: 'Ajouter une compétence' }))
       await user.type(screen.getAllByLabelText('Compétence')[0], 'Python')
       await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
@@ -163,7 +164,7 @@ describe('US06 - saisie manuelle du profil', () => {
           full_name: 'Sarra Benali',
           headline: null,
           email: 'sarra@example.fr',
-          phone: null,
+          phone: '+216 20 000 000',
           location: null,
           links: [],
         },
@@ -186,6 +187,32 @@ describe('US06 - saisie manuelle du profil', () => {
       await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
 
       expect(await screen.findByText('Adresse e-mail invalide')).toBeInTheDocument()
+      expect(api.put).not.toHaveBeenCalled()
+    })
+
+    it('blocks a full name containing digits', async () => {
+      const user = userEvent.setup()
+      mockGet(null)
+      renderPage()
+
+      await user.type(await screen.findByLabelText('Nom complet'), 'Sarra123')
+      await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
+
+      expect(
+        await screen.findByText('Le nom complet ne doit contenir que des lettres'),
+      ).toBeInTheDocument()
+      expect(api.put).not.toHaveBeenCalled()
+    })
+
+    it('requires the Tunisian phone format', async () => {
+      const user = userEvent.setup()
+      mockGet(null)
+      renderPage()
+
+      await user.type(await screen.findByLabelText('Téléphone'), '12345678')
+      await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
+
+      expect(await screen.findByText('Format attendu : +216 00 000 000')).toBeInTheDocument()
       expect(api.put).not.toHaveBeenCalled()
     })
 

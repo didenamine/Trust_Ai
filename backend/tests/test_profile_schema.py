@@ -89,6 +89,30 @@ def test_invalid_email_is_rejected() -> None:
         minimal(personal_info={"email": "not-an-email"})
 
 
+def test_full_name_accepts_letters_accents_and_separators() -> None:
+    name = "Jean-Luc O’Brien"
+
+    assert minimal(personal_info={"full_name": name}).personal_info.full_name == name
+
+
+@pytest.mark.parametrize("name", ["Sarra123", "Sarra_Benali", "123"])
+def test_full_name_rejects_non_letters(name: str) -> None:
+    with pytest.raises(ValidationError):
+        minimal(personal_info={"full_name": name})
+
+
+def test_phone_is_stored_in_the_expected_format() -> None:
+    phone = "+216 20 000 000"
+
+    assert minimal(personal_info={"phone": phone}).personal_info.phone == phone
+
+
+@pytest.mark.parametrize("phone", ["12345678", "+21620000000", "+33 1 23 45 67 89"])
+def test_phone_rejects_other_formats(phone: str) -> None:
+    with pytest.raises(ValidationError):
+        minimal(personal_info={"phone": phone})
+
+
 def test_required_fields_cannot_be_blank() -> None:
     with pytest.raises(ValidationError):
         minimal(experiences=[{"job_title": "  "}])
