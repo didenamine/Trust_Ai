@@ -82,7 +82,7 @@ La normalisation reste simple : rapprocher `ReactJS` et `React` relève de US12 
   - `GET /api/profile/me` → `{ profile, source, cv_document_id, updated_at }`, ou 404 si aucun profil
   - `PUT /api/profile/me` → crée ou remplace le profil (US06, US07) ; renvoie le profil normalisé, 422 si invalide
 - Côté frontend : `fetchMyProfile()`, `saveMyProfile(profile)`, `emptyProfile()` dans `lib/profile.ts`.
-- La page `/mon-profil` (`pages/ManualProfilePage.tsx`) utilise le même formulaire pour créer le profil à la main (US06) et le consulter/corriger (US07) : il n'existe qu'un seul modèle de profil et un seul écran.
+- La page `/mon-profil` (`pages/ManualProfilePage.tsx`) : sans profil, elle affiche directement le formulaire de saisie (US06) ; avec un profil, elle l'affiche d'abord en lecture seule (`components/ProfileView.tsx`, US07), puis « Modifier mon profil » ouvre le même formulaire, avec « Annuler » pour abandonner les changements.
 
 ## Offre analysée (US09)
 

@@ -18,6 +18,8 @@ type ProfileFormProps = {
   isSaving: boolean
   serverError: string | null
   onSubmit: (values: ProfileFormValues) => void
+  /** US07: leave edit mode without saving (only for an existing profile). */
+  onCancel?: () => void
 }
 
 export default function ProfileForm({
@@ -27,6 +29,7 @@ export default function ProfileForm({
   isSaving,
   serverError,
   onSubmit,
+  onCancel,
 }: ProfileFormProps) {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -63,13 +66,25 @@ export default function ProfileForm({
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="w-full rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
-        >
-          {isSaving ? 'Enregistrement…' : 'Enregistrer mon profil'}
-        </button>
+        <div className="flex gap-3">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isSaving}
+              className="rounded border border-slate-300 px-4 py-2 font-medium disabled:opacity-50"
+            >
+              Annuler
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="flex-1 rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
+          >
+            {isSaving ? 'Enregistrement…' : 'Enregistrer mon profil'}
+          </button>
+        </div>
       </form>
     </FormProvider>
   )
