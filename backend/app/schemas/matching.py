@@ -42,7 +42,9 @@ class SkillMatch(SchemaModel):
 
 class ExperienceMatchDetail(SchemaModel):
     candidate_years: float = Field(ge=0, description="Années d'expérience du candidat")
-    required_years: float = Field(ge=0, description="Années d'expérience minimales demandées par l'offre")
+    required_years: float = Field(
+        ge=0, description="Années d'expérience minimales demandées par l'offre"
+    )
     meets_requirement: bool
 
 
@@ -79,9 +81,8 @@ class MatchingResult(SchemaModel):
     band: MatchingBand
     dimension_scores: MatchingDimensionScores
     details: MatchingDetails
-    strengths: list[str] = Field(
-        default_factory=list, description="Points forts expliqués (US13)"
-    )
+    strengths: list[str] = Field(default_factory=list, description="Points forts expliqués (US13)")
     improvements: list[str] = Field(
-        default_factory=list, description="Axes d'amélioration / compétences manquantes expliquées (US13)"
+        default_factory=list,
+        description="Axes d'amélioration / compétences manquantes expliquées (US13)",
     )

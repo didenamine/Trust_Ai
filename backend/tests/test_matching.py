@@ -44,12 +44,8 @@ def test_perfect_matching():
             Skill(name="FastAPI", category=SkillCategory.HARD),
             Skill(name="React", category=SkillCategory.HARD),
         ],
-        experiences=[
-            ExperienceRequirement(min_years=1, job_title="Développeur Python")
-        ],
-        education=[
-            EducationRequirement(level=EducationLevel.BACHELOR)
-        ],
+        experiences=[ExperienceRequirement(min_years=1, job_title="Développeur Python")],
+        education=[EducationRequirement(level=EducationLevel.BACHELOR)],
     )
 
     result = calculate_matching(profile, offer)
@@ -74,15 +70,13 @@ def test_partial_matching_and_missing_skills():
         job_title="Lead Architecte Java / Kubernetes",
         skills=[
             Skill(name="Python", category=SkillCategory.HARD),  # candidate has this
-            Skill(name="Java", category=SkillCategory.HARD),    # missing
+            Skill(name="Java", category=SkillCategory.HARD),  # missing
             Skill(name="Kubernetes", category=SkillCategory.HARD),  # missing
-            Skill(name="AWS", category=SkillCategory.HARD),     # missing
+            Skill(name="AWS", category=SkillCategory.HARD),  # missing
         ],
-        experiences=[
-            ExperienceRequirement(min_years=5)  # profile has less than 5 years
-        ],
+        experiences=[ExperienceRequirement(min_years=5)],  # profile has less than 5 years
         education=[
-            EducationRequirement(level=EducationLevel.MASTER)   # candidate has master (engineering)
+            EducationRequirement(level=EducationLevel.MASTER)  # candidate has master (engineering)
         ],
     )
 

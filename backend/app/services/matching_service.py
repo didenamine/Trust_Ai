@@ -75,7 +75,10 @@ def _compute_skills_matching(
     if not req_skills_map:
         # No specific skills required by the offer
         score = DimensionScore(
-            weight=SKILLS_WEIGHT, points=float(SKILLS_WEIGHT), max_points=float(SKILLS_WEIGHT), ratio=1.0
+            weight=SKILLS_WEIGHT,
+            points=float(SKILLS_WEIGHT),
+            max_points=float(SKILLS_WEIGHT),
+            ratio=1.0,
         )
         return score, [], []
 
@@ -121,7 +124,10 @@ def _compute_experience_matching(
         points = round(ratio * EXPERIENCE_WEIGHT, 2)
 
     score = DimensionScore(
-        weight=EXPERIENCE_WEIGHT, points=points, max_points=float(EXPERIENCE_WEIGHT), ratio=round(ratio, 2)
+        weight=EXPERIENCE_WEIGHT,
+        points=points,
+        max_points=float(EXPERIENCE_WEIGHT),
+        ratio=round(ratio, 2),
     )
     detail = ExperienceMatchDetail(
         candidate_years=candidate_years,
@@ -135,9 +141,7 @@ def _compute_education_matching(
     profile: CandidateProfile, requirements: OfferRequirements
 ) -> tuple[DimensionScore, EducationMatchDetail]:
     # Find highest required level in offer
-    req_levels = [
-        edu.level for edu in requirements.education if edu.level is not None
-    ]
+    req_levels = [edu.level for edu in requirements.education if edu.level is not None]
     required_level = max(req_levels, key=lambda lvl: lvl.rank) if req_levels else None
 
     # Candidate's highest level
@@ -167,7 +171,10 @@ def _compute_education_matching(
             meets = False
 
     score = DimensionScore(
-        weight=EDUCATION_WEIGHT, points=points, max_points=float(EDUCATION_WEIGHT), ratio=round(ratio, 2)
+        weight=EDUCATION_WEIGHT,
+        points=points,
+        max_points=float(EDUCATION_WEIGHT),
+        ratio=round(ratio, 2),
     )
     detail = EducationMatchDetail(
         candidate_level=candidate_level,
@@ -195,7 +202,9 @@ def _build_explanations(
         strengths.append(f"{len(matched_skills)} compétence(s) requise(s) validée(s) : {names}.")
     if missing_skills:
         names = ", ".join(s.name for s in missing_skills[:5])
-        improvements.append(f"{len(missing_skills)} compétence(s) demandée(s) manquante(s) : {names}.")
+        improvements.append(
+            f"{len(missing_skills)} compétence(s) demandée(s) manquante(s) : {names}."
+        )
 
     # Experience
     if exp_detail.meets_requirement:
@@ -204,7 +213,9 @@ def _build_explanations(
                 f"Expérience suffisante ({exp_detail.candidate_years} an(s) pour {exp_detail.required_years} an(s) exigé(s))."
             )
         else:
-            strengths.append(f"Expérience professionnelle validée ({exp_detail.candidate_years} an(s)).")
+            strengths.append(
+                f"Expérience professionnelle validée ({exp_detail.candidate_years} an(s))."
+            )
     else:
         improvements.append(
             f"Expérience inférieure à l'exigence ({exp_detail.candidate_years} an(s) vs {exp_detail.required_years} an(s) demandé(s))."
@@ -218,8 +229,14 @@ def _build_explanations(
             )
     else:
         req_val = edu_detail.required_level.value if edu_detail.required_level else "non spécifié"
-        cand_val = edu_detail.candidate_level.value if edu_detail.candidate_level else "aucun diplôme renseigné"
-        improvements.append(f"Niveau de formation requis non atteint (exigé : {req_val}, profil : {cand_val}).")
+        cand_val = (
+            edu_detail.candidate_level.value
+            if edu_detail.candidate_level
+            else "aucun diplôme renseigné"
+        )
+        improvements.append(
+            f"Niveau de formation requis non atteint (exigé : {req_val}, profil : {cand_val})."
+        )
 
     return strengths, improvements
 

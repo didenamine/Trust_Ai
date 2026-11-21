@@ -33,6 +33,7 @@ def get_offer_matching(
 ) -> MatchingResult:
     """Compare the candidate's profile to the analysed job offer requirements."""
     from app.services import offer_analysis_service
+
     profile = profile_service.get_candidate_profile(db, current_user.id)
     if profile is None:
         raise HTTPException(
