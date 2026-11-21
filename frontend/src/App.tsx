@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import AccountPage from './pages/AccountPage'
 import ATSAnalysisPage from './pages/ATSAnalysisPage'
 import CVUploadPage from './pages/CVUploadPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="analyse-ats" element={<ATSAnalysisPage />} />
           <Route path="offres" element={<MyOffersPage />} />
           <Route path="offres/nouvelle" element={<AddOfferPage />} />
+          <Route path="compte" element={<AccountPage />} />
         </Route>
         <Route path="mon-cv" element={<CVUploadPage />} />
         <Route path="mon-profil" element={<ManualProfilePage />} />

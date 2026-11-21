@@ -22,6 +22,22 @@ class UserOut(BaseModel):
     full_name: str | None = None
 
 
+class UserUpdate(BaseModel):
+    """US02: partial update of the account's personal information.
+
+    A field left out of the request body is left unchanged (see `exclude_unset`
+    in the route); sending it explicitly as `null` clears it (full_name only).
+    """
+
+    email: EmailStr | None = None
+    full_name: str | None = Field(default=None, max_length=255)
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
