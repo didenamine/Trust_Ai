@@ -13,7 +13,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.session import get_db
 from app.main import app
-from app.models import Base, CVDocument, User
+from app.models import Base, CVDocument, Profile, User
 from app.schemas.profile import CandidateProfile
 from app.services import profile_service
 from app.services.profile_service import ProfileSource
@@ -169,3 +169,100 @@ def test_cv_analysis_links_the_cv_and_keeps_its_source_on_later_edits(
     assert (record.source, record.cv_document_id) == ("cv_analysis", cv.id)
     assert profile_service.get_candidate_profile(db, user.id).summary == "Corrigé"
     assert profile_service.get_candidate_profile(db, uuid.uuid4()) is None
+
+
+# --- US06 - saisie manuelle du profil ------------------------------------------
+
+
+def test_manual_creation_does_not_require_a_cv(
+    client: TestClient, session_factory: sessionmaker[Session]
+) -> None:
+    headers = auth_headers(client)
+
+    response = client.put("/api/profile/me", headers=headers, json=PROFILE_FR)
+
+    assert response.status_code == 200
+    with session_factory() as db:
+        assert db.query(CVDocument).count() == 0
+        assert db.query(Profile).count() == 1
+
+
+def test_manual_profile_is_associated_with_the_authenticated_user(
+    client: TestClient, session_factory: sessionmaker[Session]
+) -> None:
+    headers = auth_headers(client, "owner@example.com")
+
+    assert client.put("/api/profile/me", headers=headers, json=PROFILE_FR).status_code == 200
+
+    with session_factory() as db:
+        owner = db.query(User).filter(User.email == "owner@example.com").one()
+        record = db.query(Profile).one()
+        assert record.user_id == owner.id
+        assert CandidateProfile.model_validate(record.data) == CandidateProfile.model_validate(
+            PROFILE_FR
+        )
+
+
+def test_repeated_manual_saves_keep_one_profile(
+    client: TestClient, session_factory: sessionmaker[Session]
+) -> None:
+    headers = auth_headers(client)
+    assert client.put("/api/profile/me", headers=headers, json=PROFILE_FR).status_code == 200
+
+    edited = {**PROFILE_FR, "summary": "Résumé saisi à la main"}
+    assert client.put("/api/profile/me", headers=headers, json=edited).status_code == 200
+
+    with session_factory() as db:
+        assert db.query(Profile).count() == 1
+    stored = client.get("/api/profile/me", headers=headers).json()
+    assert stored["source"] == "manual"
+    assert stored["profile"]["summary"] == "Résumé saisi à la main"
+
+
+@pytest.mark.parametrize(
+    ("payload", "label"),
+    [
+        ({}, "language manquant"),
+        ({"language": "fr", "personal_info": {"email": "pas-un-email"}}, "e-mail invalide"),
+        ({"language": "fr", "personal_info": {"links": ["http://"]}}, "URL invalide"),
+        ({"language": "fr", "personal_info": {"phone": "1" * 51}}, "téléphone trop long"),
+        (
+            {"language": "fr", "skills": [{"name": "Python", "category": "inconnue"}]},
+            "enum invalide",
+        ),
+        ({"language": "fr", "skills": [{"name": "x" * 201}]}, "texte trop long"),
+        ({"language": "fr", "skills": [{"name": "Python"}] * 151}, "trop de compétences"),
+        ({"language": "fr", "experiences": [{}]}, "expérience incomplète"),
+        (
+            {"language": "fr", "experiences": [{"job_title": "Dev", "start_date": "2021-13"}]},
+            "date invalide",
+        ),
+        (
+            {"language": "fr", "languages": [{"name": "Français", "code": "fra"}]},
+            "code langue invalide",
+        ),
+    ],
+)
+def test_manual_submission_rejects_invalid_data(
+    client: TestClient, payload: dict, label: str
+) -> None:
+    headers = auth_headers(client)
+    response = client.put("/api/profile/me", headers=headers, json=payload)
+
+    assert response.status_code == 422, label
+    assert client.get("/api/profile/me", headers=headers).status_code == 404
+
+
+def test_manual_profile_round_trips_through_the_common_schema(
+    client: TestClient,
+) -> None:
+    headers = auth_headers(client)
+    submitted = CandidateProfile.model_validate(PROFILE_FR).model_dump(mode="json")
+
+    response = client.put("/api/profile/me", headers=headers, json=submitted)
+
+    assert response.status_code == 200
+    assert (
+        CandidateProfile.model_validate(response.json()["profile"]).model_dump(mode="json")
+        == submitted
+    )

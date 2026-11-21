@@ -4,6 +4,7 @@ import CVUploadPage from './pages/CVUploadPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import ManualProfilePage from './pages/ManualProfilePage'
 import NotFoundPage from './pages/NotFoundPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
         <Route path="mon-cv" element={<CVUploadPage />} />
+        <Route path="mon-profil" element={<ManualProfilePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

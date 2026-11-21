@@ -24,6 +24,9 @@ export default function Layout() {
                   <Link to="/mon-cv" className="text-blue-600 underline">
                     Mon CV
                   </Link>
+                  <Link to="/mon-profil" className="text-blue-600 underline">
+                    Mon profil
+                  </Link>
                   <span className="text-slate-600">{user.email}</span>
                   <button onClick={handleLogout} className="text-blue-600 underline">
                     Se déconnecter
