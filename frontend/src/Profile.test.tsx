@@ -6,6 +6,14 @@ import { MemoryRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { api } from './lib/api'
+import {
+  emptyProfile,
+  formatDuration,
+  formatPartialDate,
+  formatPeriod,
+  totalExperienceMonths,
+  type CandidateProfile,
+} from './lib/profile'
 
 vi.mock('./lib/api', () => ({
   api: { get: vi.fn(), put: vi.fn() },
@@ -125,9 +133,11 @@ describe('US06 - saisie manuelle du profil', () => {
     })
 
     it('prefills the form with an existing CV-generated profile', async () => {
+      const user = userEvent.setup()
       mockGet(CV_PROFILE)
       renderPage()
 
+      await user.click(await screen.findByRole('button', { name: 'Modifier mon profil' }))
       expect(await screen.findByLabelText('Nom complet')).toHaveValue('Sarra Benali')
       expect(screen.getByLabelText('E-mail')).toHaveValue('sarra@example.fr')
       expect(screen.getAllByLabelText('Compétence')[0]).toHaveValue('Python')
@@ -235,7 +245,8 @@ describe('US06 - saisie manuelle du profil', () => {
       )
       renderPage()
 
-      await user.click(await screen.findByRole('button', { name: 'Enregistrer mon profil' }))
+      await user.click(await screen.findByRole('button', { name: 'Modifier mon profil' }))
+      await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
 
       expect(await screen.findByText('Votre profil a bien été enregistré.')).toBeInTheDocument()
       expect(vi.mocked(api.put).mock.calls[0][1]).toMatchObject({
@@ -287,5 +298,156 @@ describe('US06 - saisie manuelle du profil', () => {
       await user.click(pending)
       await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1))
     })
+  })
+})
+
+describe('US07 - consultation et correction du profil', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('trustai.access_token', 'fake-token')
+    vi.mocked(api.get).mockReset()
+    vi.mocked(api.put).mockReset()
+  })
+
+  it('shows an existing profile read-only, section by section', async () => {
+    mockGet(CV_PROFILE)
+    renderPage()
+
+    const identity = await screen.findByLabelText('Identité')
+    expect(identity).toHaveTextContent('Sarra Benali')
+    expect(identity).toHaveTextContent('Développeuse full-stack')
+    expect(identity).toHaveTextContent('sarra@example.fr')
+    expect(screen.getByLabelText('Compétences (2)')).toHaveTextContent('Python · Avancé')
+    const experiences = screen.getByLabelText('Expériences professionnelles (1)')
+    expect(experiences).toHaveTextContent("mars 2021 – aujourd'hui · Temps plein")
+    expect(experiences).toHaveTextContent('A réduit les délais de 30 %')
+    expect(screen.getByLabelText('Langues (1)')).toHaveTextContent('Arabe · Langue maternelle')
+    expect(screen.getByLabelText('Formations (0)')).toHaveTextContent(
+      'Aucune formation renseignée.',
+    )
+    expect(screen.getByText(/généré automatiquement à partir de votre CV/)).toBeInTheDocument()
+    // Read-only: no form fields until the candidate chooses to edit.
+    expect(screen.queryByLabelText('Nom complet')).not.toBeInTheDocument()
+  })
+
+  it('corrects the profile and comes back to the updated view', async () => {
+    const user = userEvent.setup()
+    mockGet(CV_PROFILE)
+    vi.mocked(api.put).mockImplementation(async (_url: string, body?: unknown) =>
+      savedResponse(body, 'cv_analysis'),
+    )
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Modifier mon profil' }))
+    const headline = screen.getByLabelText('Titre professionnel')
+    await user.clear(headline)
+    await user.type(headline, 'Ingénieure logiciel')
+    await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Votre profil a bien été enregistré.',
+    )
+    expect(screen.getByLabelText('Identité')).toHaveTextContent('Ingénieure logiciel')
+    expect(screen.queryByLabelText('Nom complet')).not.toBeInTheDocument()
+    // The correction keeps the entries' ids (US13 / US16 rely on them).
+    expect(vi.mocked(api.put).mock.calls[0][1]).toMatchObject({
+      personal_info: { headline: 'Ingénieure logiciel' },
+      experiences: [{ id: 'exp-1', job_title: 'Développeuse' }],
+    })
+  })
+
+  it('cancels a correction without saving anything', async () => {
+    const user = userEvent.setup()
+    mockGet(CV_PROFILE)
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Modifier mon profil' }))
+    await user.clear(screen.getByLabelText('Titre professionnel'))
+    await user.type(screen.getByLabelText('Titre professionnel'), 'Autre chose')
+    await user.click(screen.getByRole('button', { name: 'Annuler' }))
+
+    expect(screen.getByLabelText('Identité')).toHaveTextContent('Développeuse full-stack')
+    expect(screen.getByLabelText('Identité')).not.toHaveTextContent('Autre chose')
+    expect(api.put).not.toHaveBeenCalled()
+  })
+
+  it('stays in edit mode and shows the error when the save fails', async () => {
+    const user = userEvent.setup()
+    mockGet(CV_PROFILE)
+    vi.mocked(api.put).mockRejectedValue(apiError(422, 'Profil invalide'))
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Modifier mon profil' }))
+    await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Profil invalide')
+    expect(screen.getByLabelText('Nom complet')).toHaveValue('Sarra Benali')
+  })
+
+  it('says when the profile was entered manually', async () => {
+    mockGet({ ...CV_PROFILE, source: 'manual' })
+    renderPage()
+
+    expect(await screen.findByText(/Ce profil a été saisi manuellement/)).toBeInTheDocument()
+  })
+})
+
+describe('US07 - profile display helpers', () => {
+  const experience = (fields: Record<string, unknown>) => ({
+    job_title: 'Dev',
+    company: null,
+    location: null,
+    employment_type: null,
+    start_date: null,
+    end_date: null,
+    is_current: false,
+    description: null,
+    achievements: [],
+    skills: [],
+    ...fields,
+  })
+
+  it('formats partial dates and periods in French', () => {
+    expect(formatPartialDate('2021-03')).toBe('mars 2021')
+    expect(formatPartialDate('2021')).toBe('2021')
+    expect(formatPeriod({ start_date: '2019', end_date: '2022-12', is_current: false })).toBe(
+      '2019 – décembre 2022',
+    )
+    expect(formatPeriod({ start_date: '2025-09', end_date: null, is_current: true })).toBe(
+      "septembre 2025 – aujourd'hui",
+    )
+    expect(formatPeriod({ start_date: null, end_date: '2022', is_current: false })).toBe('2022')
+    expect(formatPeriod({ start_date: null, end_date: null, is_current: false })).toBeNull()
+  })
+
+  it('counts experience like the backend: overlaps once, no volunteering', () => {
+    const profile = {
+      ...emptyProfile(),
+      experiences: [
+        experience({ start_date: '2020-01', end_date: '2020-12' }), // 12 months
+        experience({ start_date: '2020-07', end_date: '2021-06' }), // +6
+        experience({ start_date: '2023-01', end_date: '2023-03' }), // +3
+        experience({ start_date: '2019', employment_type: 'volunteer', end_date: '2019' }),
+        experience({ start_date: '2018' }), // no end: not measurable
+      ],
+    } as CandidateProfile
+
+    expect(totalExperienceMonths(profile)).toBe(21)
+  })
+
+  it('counts the current job until today', () => {
+    const profile = {
+      ...emptyProfile(),
+      experiences: [experience({ start_date: '2025-09', is_current: true })],
+    } as CandidateProfile
+
+    expect(totalExperienceMonths(profile, new Date(2026, 10, 20))).toBe(15)
+  })
+
+  it('formats durations', () => {
+    expect(formatDuration(27)).toBe('2 ans et 3 mois')
+    expect(formatDuration(12)).toBe('1 an')
+    expect(formatDuration(5)).toBe('5 mois')
+    expect(formatDuration(0)).toBe('moins d’un mois')
   })
 })
