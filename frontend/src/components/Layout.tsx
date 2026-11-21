@@ -33,6 +33,9 @@ export default function Layout() {
                   <Link to="/offres/nouvelle" className="text-blue-600 underline">
                     Ajouter une offre
                   </Link>
+                  <Link to="/compte" className="text-blue-600 underline">
+                    Mon compte
+                  </Link>
                   <span className="text-slate-600">{user.email}</span>
                   <button onClick={handleLogout} className="text-blue-600 underline">
                     Se déconnecter

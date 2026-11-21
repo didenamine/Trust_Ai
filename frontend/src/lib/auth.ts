@@ -57,3 +57,27 @@ export async function confirmPasswordReset(input: {
     new_password: input.newPassword,
   })
 }
+
+/** US02: only the fields present in `input` are changed (full name and/or e-mail). */
+export async function updateAccount(input: { email?: string; fullName?: string }): Promise<User> {
+  const payload: Record<string, string> = {}
+  if (input.email !== undefined) payload.email = input.email
+  if (input.fullName !== undefined) payload.full_name = input.fullName
+
+  const { data } = await api.patch<User>('/auth/me', payload)
+  return data
+}
+
+export async function changeAccountPassword(input: {
+  currentPassword: string
+  newPassword: string
+}): Promise<void> {
+  await api.put('/auth/me/password', {
+    current_password: input.currentPassword,
+    new_password: input.newPassword,
+  })
+}
+
+export async function deleteAccount(): Promise<void> {
+  await api.delete('/auth/me')
+}
