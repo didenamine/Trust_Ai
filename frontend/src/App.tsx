@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import CVUploadPage from './pages/CVUploadPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="offres" element={<MyOffersPage />} />
           <Route path="offres/nouvelle" element={<AddOfferPage />} />
         </Route>
+        <Route path="mon-cv" element={<CVUploadPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

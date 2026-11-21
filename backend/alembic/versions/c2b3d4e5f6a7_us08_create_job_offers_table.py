@@ -1,7 +1,7 @@
 """US08: create job_offers table
 
 Revision ID: c2b3d4e5f6a7
-Revises: b1a2c3d4e5f6
+Revises: ffcdc0e04993
 Create Date: 2026-11-19 00:00:00
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c2b3d4e5f6a7"
-down_revision: str | None = "b1a2c3d4e5f6"
+down_revision: str | None = "ffcdc0e04993"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

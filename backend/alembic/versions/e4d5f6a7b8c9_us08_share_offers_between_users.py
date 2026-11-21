@@ -39,30 +39,24 @@ def upgrade() -> None:
     )
 
     # Offers saved by several users under the same URL: keep the oldest, move the links to it.
-    op.execute(
-        """
+    op.execute("""
         CREATE TEMPORARY TABLE offer_merge ON COMMIT DROP AS
         SELECT id,
                first_value(id) OVER (PARTITION BY source_url ORDER BY created_at, id) AS keep_id
         FROM job_offers
         WHERE source_url IS NOT NULL
-        """
-    )
-    op.execute(
-        """
+        """)
+    op.execute("""
         UPDATE user_offers AS uo
         SET offer_id = m.keep_id
         FROM offer_merge AS m
         WHERE uo.offer_id = m.id AND m.id <> m.keep_id
-        """
-    )
-    op.execute(
-        """
+        """)
+    op.execute("""
         DELETE FROM job_offers AS j
         USING offer_merge AS m
         WHERE j.id = m.id AND m.id <> m.keep_id
-        """
-    )
+        """)
 
     # The owner now lives in user_offers; a URL is unique across all users.
     op.drop_constraint("uq_job_offers_user_source_url", "job_offers", type_="unique")

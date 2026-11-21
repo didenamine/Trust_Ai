@@ -21,15 +21,13 @@ CONSTRAINT = "uq_job_offers_user_source_url"
 
 def upgrade() -> None:
     # Keep a single row per (user, url) so the constraint can be created on existing data.
-    op.execute(
-        """
+    op.execute("""
         DELETE FROM job_offers AS a
         USING job_offers AS b
         WHERE a.user_id = b.user_id
           AND a.source_url = b.source_url
           AND a.id > b.id
-        """
-    )
+        """)
     op.create_unique_constraint(CONSTRAINT, "job_offers", ["user_id", "source_url"])
 
 
