@@ -89,6 +89,37 @@ def test_invalid_email_is_rejected() -> None:
         minimal(personal_info={"email": "not-an-email"})
 
 
+@pytest.mark.parametrize("name", ["Jean-Luc O’Brien", "S. Ben Ali", "John Smith Jr."])
+def test_full_name_accepts_letters_accents_and_separators(name: str) -> None:
+    assert minimal(personal_info={"full_name": name}).personal_info.full_name == name
+
+
+@pytest.mark.parametrize("name", ["Sarra123", "Sarra_Benali", "123"])
+def test_full_name_rejects_non_letters(name: str) -> None:
+    with pytest.raises(ValidationError):
+        minimal(personal_info={"full_name": name})
+
+
+@pytest.mark.parametrize(
+    "phone",
+    ["+216 20 000 000", "+21620000000", "+216-20-000-000", "20 000 000", "0021620000000"],
+)
+def test_tunisian_phones_are_stored_in_one_format(phone: str) -> None:
+    assert minimal(personal_info={"phone": phone}).personal_info.phone == "+216 20 000 000"
+
+
+@pytest.mark.parametrize("phone", ["+33 6 12 34 56 78", "+1 (415) 555-0100", "+44 20 7946 0958"])
+def test_foreign_phones_are_kept_as_written(phone: str) -> None:
+    # CVs analysed by US05 can come from anywhere: their phone must not be erased.
+    assert minimal(personal_info={"phone": phone}).personal_info.phone == phone
+
+
+@pytest.mark.parametrize("phone", ["abc", "12 34", "+216 20 000 000 poste 12", "1" * 16])
+def test_phone_rejects_what_is_not_a_phone_number(phone: str) -> None:
+    with pytest.raises(ValidationError):
+        minimal(personal_info={"phone": phone})
+
+
 def test_required_fields_cannot_be_blank() -> None:
     with pytest.raises(ValidationError):
         minimal(experiences=[{"job_title": "  "}])

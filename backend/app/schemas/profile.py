@@ -14,6 +14,8 @@ They must play no part in matching, so the profile never stores them.
 See docs/PROFIL.md for the field-by-field description.
 """
 
+import re
+import unicodedata
 import uuid
 from datetime import date, datetime
 from typing import Annotated, Any, Literal, Self
@@ -51,6 +53,53 @@ def _add_url_scheme(value: Any) -> Any:
 
 Url = Annotated[HttpUrl, BeforeValidator(_add_url_scheme)]
 OptionalUrl = Annotated[Url | None, BeforeValidator(blank_to_none)]
+
+_FULL_NAME_SEPARATORS = {" ", "-", "'", "’", "."}  # "." for initials: "S. Ben Ali", "Jr."
+# Characters a phone number is written with on a CV: +216 20 000 000, (+33) 6.12.34.56.78...
+_PHONE_CHARS_RE = re.compile(r"^\+?[\d\s().\-/]+$")
+# A Tunisian number: 8 digits (first digit 2-9), optionally preceded by +216 / 00216.
+_TUNISIAN_PHONE_RE = re.compile(r"^(?:\+216|00216)?([2-9]\d{7})$")
+
+
+def _validate_full_name(value: Any) -> Any:
+    """Letters (with accents), spaces, hyphens, apostrophes and periods; no digits."""
+    if not isinstance(value, str):
+        return value
+    name = unicodedata.normalize("NFC", value).strip()
+    letters = [char for char in name if char.isalpha()]
+    if not letters or any(
+        not char.isalpha() and char not in _FULL_NAME_SEPARATORS for char in name
+    ):
+        raise ValueError("Le nom complet ne doit contenir que des lettres")
+    return name
+
+
+def _validate_phone(value: Any) -> Any:
+    """Any real phone number, so numbers extracted from CVs (US05) are kept.
+
+    Tunisian numbers are stored in one format, "+216 20 000 000", which is also the
+    format the manual-entry form (US06) requires; foreign numbers are kept as written.
+    The strict Tunisian format is checked in the form only: enforcing it here would
+    erase the phones of CVs written differently and break profiles saved before.
+    """
+    if not isinstance(value, str):
+        return value
+    phone = " ".join(value.split())
+    digits = re.sub(r"\D", "", phone)
+    if not _PHONE_CHARS_RE.fullmatch(phone) or not 8 <= len(digits) <= 15:
+        raise ValueError("Numéro de téléphone invalide")
+    compact = re.sub(r"[\s().\-/]", "", phone)
+    if match := _TUNISIAN_PHONE_RE.fullmatch(compact):
+        local = match.group(1)
+        return f"+216 {local[:2]} {local[2:5]} {local[5:]}"
+    return phone
+
+
+FullName = Annotated[str, BeforeValidator(_validate_full_name), Field(min_length=1, max_length=200)]
+OptionalFullName = Annotated[FullName | None, BeforeValidator(blank_to_none)]
+
+Phone = Annotated[str, BeforeValidator(_validate_phone), Field(min_length=1, max_length=50)]
+OptionalPhone = Annotated[Phone | None, BeforeValidator(blank_to_none)]
 
 
 def _new_id() -> str:
@@ -106,13 +155,11 @@ class DatedItem(ProfileItem):
 
 
 class PersonalInfo(SchemaModel):
-    full_name: OptionalShortText = None
+    full_name: OptionalFullName = None
     headline: OptionalShortText = None
     """The job title the candidate presents themselves with, e.g. "Développeur full-stack"."""
     email: Annotated[EmailStr | None, BeforeValidator(blank_to_none)] = None
-    phone: Annotated[
-        Annotated[str, Field(min_length=1, max_length=50)] | None, BeforeValidator(blank_to_none)
-    ] = None
+    phone: OptionalPhone = None
     location: OptionalShortText = None
     links: Annotated[list[Url], Field(max_length=10)] = []
     """LinkedIn, GitHub, portfolio..."""
