@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   ACCEPTED_CV_EXTENSIONS,
@@ -33,6 +33,7 @@ export default function CVUploadPage() {
 
 function CVUpload() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -43,7 +44,11 @@ function CVUpload() {
   // US05: the CV is analysed automatically right after the import.
   const analysis = useMutation({
     mutationFn: analyzeCV,
-    onSuccess: (profile) => queryClient.setQueryData(PROFILE_QUERY_KEY, profile),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(PROFILE_QUERY_KEY, profile)
+      // Let the candidate review and correct what the LLM extracted.
+      navigate('/mon-profil')
+    },
   })
 
   const upload = useMutation({

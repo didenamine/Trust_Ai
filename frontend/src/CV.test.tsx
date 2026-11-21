@@ -115,8 +115,13 @@ describe('US03 - import du CV', () => {
     it('uploads a PDF as multipart form data and shows it as the current CV', async () => {
       const user = userEvent.setup()
       mockGet(null)
-      vi.mocked(api.post).mockResolvedValue({
-        data: { ...STORED_CV, original_filename: 'mon-cv.pdf' },
+      vi.mocked(api.post).mockImplementation(async (url: string) => {
+        if (url === '/cv') {
+          return { data: { ...STORED_CV, original_filename: 'mon-cv.pdf' } }
+        }
+        // Keep the analysis pending: this test is only about the upload request.
+        if (url === '/cv/me/analyze') return new Promise(() => {})
+        throw new Error(`unexpected POST ${url}`)
       })
       renderPage()
 
@@ -214,12 +219,31 @@ describe('US05 - analyse automatique du CV', () => {
     vi.mocked(api.get).mockReset()
   })
 
-  it('analyses the CV automatically right after the import', async () => {
+  it('analyses the CV after import and opens the profile for review', async () => {
     const user = userEvent.setup()
-    mockGet(null)
+    let uploaded = false
+    let analysed = false
+    vi.mocked(api.get).mockImplementation(async (url: string) => {
+      if (url === '/auth/me') return { data: ME }
+      if (url === '/cv/me') {
+        if (uploaded) return { data: STORED_CV }
+        throw apiError(404, 'Aucun CV importé')
+      }
+      if (url === '/profile/me') {
+        if (analysed) return { data: ANALYSED_PROFILE }
+        throw apiError(404, 'Aucun profil')
+      }
+      throw new Error(`unexpected GET ${url}`)
+    })
     vi.mocked(api.post).mockImplementation(async (url: string) => {
-      if (url === '/cv') return { data: STORED_CV }
-      if (url === '/cv/me/analyze') return { data: ANALYSED_PROFILE }
+      if (url === '/cv') {
+        uploaded = true
+        return { data: STORED_CV }
+      }
+      if (url === '/cv/me/analyze') {
+        analysed = true
+        return { data: ANALYSED_PROFILE }
+      }
       throw new Error(`unexpected POST ${url}`)
     })
     renderPage()
@@ -227,10 +251,8 @@ describe('US05 - analyse automatique du CV', () => {
     await user.upload(await screen.findByLabelText('Fichier du CV'), pdfFile())
     await user.click(screen.getByRole('button', { name: 'Importer mon CV' }))
 
-    expect(await screen.findByText('Votre CV a été analysé.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Analyse du CV')).toHaveTextContent(
-      'CV en français : 2 compétences, 1 expériences, 0 formations, 1 langues.',
-    )
+    expect(await screen.findByRole('heading', { name: 'Mon profil' })).toBeInTheDocument()
+    expect(await screen.findByLabelText('Nom complet')).toHaveValue('Sarra')
     expect(vi.mocked(api.post).mock.calls.map(([url]) => url)).toEqual(['/cv', '/cv/me/analyze'])
   })
 
@@ -251,9 +273,18 @@ describe('US05 - analyse automatique du CV', () => {
     expect(screen.getByRole('button', { name: 'Analyser mon CV' })).toBeInTheDocument()
   })
 
-  it("shows the API's message when the analysis fails, and lets the user retry", async () => {
+  it("shows the API's message when the analysis fails, and opens the profile after a successful retry", async () => {
     const user = userEvent.setup()
-    mockGet(STORED_CV)
+    let analysed = false
+    vi.mocked(api.get).mockImplementation(async (url: string) => {
+      if (url === '/auth/me') return { data: ME }
+      if (url === '/cv/me') return { data: STORED_CV }
+      if (url === '/profile/me') {
+        if (analysed) return { data: ANALYSED_PROFILE }
+        throw apiError(404, 'Aucun profil')
+      }
+      throw new Error(`unexpected GET ${url}`)
+    })
     vi.mocked(api.post)
       .mockRejectedValueOnce(
         apiError(
@@ -261,7 +292,13 @@ describe('US05 - analyse automatique du CV', () => {
           'Langue du CV non prise en charge : le CV doit être en français ou en anglais',
         ),
       )
-      .mockResolvedValueOnce({ data: ANALYSED_PROFILE })
+      .mockImplementationOnce(async (url: string) => {
+        if (url === '/cv/me/analyze') {
+          analysed = true
+          return { data: ANALYSED_PROFILE }
+        }
+        throw new Error(`unexpected POST ${url}`)
+      })
     renderPage()
 
     await user.click(await screen.findByRole('button', { name: 'Analyser mon CV' }))
@@ -272,7 +309,7 @@ describe('US05 - analyse automatique du CV', () => {
     ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: "Relancer l'analyse" }))
-    expect(await screen.findByText('Votre CV a été analysé.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mon profil' })).toBeInTheDocument()
   })
 
   it('shows a waiting message during the analysis', async () => {
