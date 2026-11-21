@@ -33,11 +33,11 @@ const sampleMatching: MatchingResult = {
   },
   strengths: [
     '3 compétence(s) requise(s) validée(s) : Python, FastAPI, React.',
-    'Niveau d’études requis validé (bachelor).',
+    'Niveau d\u2019études requis validé (bachelor).',
   ],
   improvements: [
     '1 compétence(s) demandée(s) manquante(s) : AWS Cloud.',
-    'Expérience inférieure à l’exigence (1.8 an(s) vs 2.0 an(s) demandé(s)).',
+    'Expérience inférieure à l\u2019exigence (1.8 an(s) vs 2.0 an(s) demandé(s)).',
   ],
 }
 

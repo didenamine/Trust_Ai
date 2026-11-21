@@ -78,7 +78,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
               rel="noopener noreferrer"
               className="text-blue-600 underline"
             >
-              Annonce d'origine
+              Annonce d&apos;origine
             </a>
           </>
         )}
@@ -102,7 +102,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       ) : (
         <p className="text-sm italic text-slate-500">Pas de description.</p>
       )}
-      <div className="pt-1 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 pt-1">
         <button
           type="button"
           disabled={analyze.isPending}
@@ -112,8 +112,8 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
           {analyze.isPending
             ? 'Analyse en cours...'
             : analysis
-              ? 'Actualiser l’analyse'
-              : 'Analyser l’offre'}
+              ? "Actualiser l'analyse"
+              : "Analyser l'offre"}
         </button>
         {analysis && (
           <button
@@ -178,7 +178,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
         )}
         {remove.isError && (
           <p role="alert" className="mt-2 text-sm text-red-700">
-            Impossible de supprimer l'offre. Réessayez.
+            Impossible de supprimer l&apos;offre. Réessayez.
           </p>
         )}
       </div>
@@ -224,7 +224,7 @@ export default function MyOffersPage() {
       )}
 
       {offers && offers.length === 0 && (
-        <p className="text-slate-600">Vous n'avez encore ajouté aucune offre.</p>
+        <p className="text-slate-600">Vous n&apos;avez encore ajouté aucune offre.</p>
       )}
 
       {offers && offers.length > 0 && (
