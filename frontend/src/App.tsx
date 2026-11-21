@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import ATSAnalysisPage from './pages/ATSAnalysisPage'
 import CVUploadPage from './pages/CVUploadPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>
+          <Route path="analyse-ats" element={<ATSAnalysisPage />} />
           <Route path="offres" element={<MyOffersPage />} />
           <Route path="offres/nouvelle" element={<AddOfferPage />} />
         </Route>
