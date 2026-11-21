@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import MatchingExplanationPanel from '../components/MatchingExplanationPanel'
 import OfferRequirementsPanel from '../components/OfferRequirementsPanel'
 import { useAuth } from '../context/AuthContext'
+import { fetchMatching, type MatchingResult } from '../lib/matching'
 import type { OfferAnalysis } from '../lib/offerAnalysis'
 import {
   analyzeOffer,
@@ -21,6 +23,8 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
   const [confirming, setConfirming] = useState(false)
   const [analysis, setAnalysis] = useState<OfferAnalysis | null>(null)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
+  const [matching, setMatching] = useState<MatchingResult | null>(null)
+  const [matchingError, setMatchingError] = useState<string | null>(null)
   const remove = useMutation({
     mutationFn: () => deleteOffer(offer.id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offers'] }),
@@ -32,6 +36,27 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       setAnalysisError(null)
     },
     onError: (error: unknown) => setAnalysisError(getOfferAnalysisErrorMessage(error)),
+  })
+  const match = useMutation({
+    mutationFn: () => fetchMatching(offer.id),
+    onSuccess: (result) => {
+      setMatching(result)
+      setMatchingError(null)
+    },
+    onError: (error: unknown) => {
+      let msg =
+        'Impossible de calculer la compatibilité. Vérifiez que votre profil candidat est créé.'
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const resp = (error as { response?: { data?: { detail?: string } } }).response
+        if (resp?.data?.detail) {
+          msg =
+            typeof resp.data.detail === 'string'
+              ? resp.data.detail
+              : JSON.stringify(resp.data.detail)
+        }
+      }
+      setMatchingError(msg)
+    },
   })
   const isLong =
     offer.description.length > LONG_DESCRIPTION_CHARS ||
@@ -77,7 +102,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       ) : (
         <p className="text-sm italic text-slate-500">Pas de description.</p>
       )}
-      <div className="pt-1">
+      <div className="pt-1 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={analyze.isPending}
@@ -90,6 +115,20 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
               ? 'Actualiser l’analyse'
               : 'Analyser l’offre'}
         </button>
+        {analysis && (
+          <button
+            type="button"
+            disabled={match.isPending}
+            onClick={() => match.mutate()}
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {match.isPending
+              ? 'Calcul du matching...'
+              : matching
+                ? 'Actualiser la compatibilité'
+                : 'Voir ma compatibilité'}
+          </button>
+        )}
       </div>
       {analysisError && (
         <p role="alert" className="mt-2 text-sm text-red-700">
@@ -97,6 +136,12 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
         </p>
       )}
       {analysis && <OfferRequirementsPanel requirements={analysis.requirements} />}
+      {matchingError && (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {matchingError}
+        </p>
+      )}
+      {matching && <MatchingExplanationPanel matching={matching} />}
       <div className="pt-1">
         {confirming ? (
           <div className="flex flex-wrap items-center gap-3 text-sm">
