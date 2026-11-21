@@ -57,13 +57,13 @@ describe('US13 - Explication du matching (MatchingExplanationPanel)', () => {
     // Strengths section heading (US13)
     expect(screen.getByText(/Points forts/)).toBeInTheDocument()
 
-    // Matched skill badges rendered as "✓ <name>"
-    expect(screen.getByText(/Python/)).toBeInTheDocument()
-    expect(screen.getByText(/FastAPI/)).toBeInTheDocument()
-    expect(screen.getByText(/React/)).toBeInTheDocument()
+    // Matched skill badges rendered as "✓ <name>" — exact text avoids matching the strengths list
+    expect(screen.getByText('✓ Python')).toBeInTheDocument()
+    expect(screen.getByText('✓ FastAPI')).toBeInTheDocument()
+    expect(screen.getByText('✓ React')).toBeInTheDocument()
 
     // Missing skills section heading & badge (US13)
     expect(screen.getByText(/Compétences manquantes/)).toBeInTheDocument()
-    expect(screen.getByText(/AWS Cloud/)).toBeInTheDocument()
+    expect(screen.getByText('✕ AWS Cloud')).toBeInTheDocument()
   })
 })

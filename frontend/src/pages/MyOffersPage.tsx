@@ -112,8 +112,8 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
           {analyze.isPending
             ? 'Analyse en cours...'
             : analysis
-              ? "Actualiser l'analyse"
-              : "Analyser l'offre"}
+              ? 'Actualiser l’analyse'
+              : 'Analyser l’offre'}
         </button>
         {analysis && (
           <button
