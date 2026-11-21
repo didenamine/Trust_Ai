@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -7,6 +7,7 @@ from app.core.security import create_access_token
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    PasswordChange,
     PasswordResetConfirm,
     PasswordResetRequest,
     PasswordResetRequestOut,
@@ -14,6 +15,7 @@ from app.schemas.auth import (
     UserCreate,
     UserLogin,
     UserOut,
+    UserUpdate,
 )
 from app.services import auth_service
 
@@ -51,6 +53,50 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """US02: update personal information (only the fields sent are changed)."""
+    updates = payload.model_dump(exclude_unset=True)
+    try:
+        return auth_service.update_account(db, current_user, updates=updates)
+    except auth_service.EmailAlreadyRegisteredError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Un compte existe déjà avec cet e-mail"
+        ) from exc
+
+
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_my_password(
+    payload: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """US02: change the password; the current one must be provided."""
+    try:
+        auth_service.change_password(
+            db,
+            current_user,
+            current_password=payload.current_password,
+            new_password=payload.new_password,
+        )
+    except auth_service.InvalidCredentialsError as exc:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Mot de passe actuel incorrect") from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_me(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> Response:
+    """US02: delete the account and all of its owned data."""
+    auth_service.delete_account(db, current_user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/password-reset/request", response_model=PasswordResetRequestOut)

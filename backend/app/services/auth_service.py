@@ -55,6 +55,44 @@ def get_user_by_id(db: Session, user_id: uuid.UUID) -> User | None:
     return db.get(User, user_id)
 
 
+def update_account(db: Session, user: User, *, updates: dict) -> User:
+    """US02: apply only the fields present in `updates` (see `UserUpdate`)."""
+    if "email" in updates:
+        new_email = _normalize_email(updates["email"])
+        already_taken = (
+            db.query(User).filter(User.email == new_email, User.id != user.id).first() is not None
+        )
+        if new_email != user.email and already_taken:
+            raise EmailAlreadyRegisteredError(new_email)
+        user.email = new_email
+    if "full_name" in updates:
+        user.full_name = updates["full_name"]
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def change_password(db: Session, user: User, *, current_password: str, new_password: str) -> User:
+    """US02: the candidate must know their current password to set a new one."""
+    if not verify_password(current_password, user.hashed_password):
+        raise InvalidCredentialsError(user.email)
+
+    user.hashed_password = hash_password(new_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def delete_account(db: Session, user: User) -> None:
+    """US02: delete the account. Owned data (CV, profile, saved offers, ATS results)
+    cascades at the database level (see each model's `ForeignKey(..., ondelete="CASCADE")`)."""
+    db.delete(user)
+    db.commit()
+
+
 def create_password_reset(db: Session, *, email: str) -> str | None:
     """Return a reset token if the e-mail matches an account, else None.
 
