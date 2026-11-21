@@ -1,8 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import OfferRequirementsPanel from '../components/OfferRequirementsPanel'
 import { useAuth } from '../context/AuthContext'
-import { deleteOffer, fetchMyOffers, type JobOfferSummary } from '../lib/offers'
+import type { OfferAnalysis } from '../lib/offerAnalysis'
+import {
+  analyzeOffer,
+  deleteOffer,
+  fetchMyOffers,
+  getOfferAnalysisErrorMessage,
+  type JobOfferSummary,
+} from '../lib/offers'
 
 const LONG_DESCRIPTION_CHARS = 280
 const LONG_DESCRIPTION_LINES = 4
@@ -11,9 +19,19 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
   const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [analysis, setAnalysis] = useState<OfferAnalysis | null>(null)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
   const remove = useMutation({
     mutationFn: () => deleteOffer(offer.id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offers'] }),
+  })
+  const analyze = useMutation({
+    mutationFn: (refresh: boolean) => analyzeOffer(offer.id, refresh),
+    onSuccess: (result) => {
+      setAnalysis(result)
+      setAnalysisError(null)
+    },
+    onError: (error: unknown) => setAnalysisError(getOfferAnalysisErrorMessage(error)),
   })
   const isLong =
     offer.description.length > LONG_DESCRIPTION_CHARS ||
@@ -59,6 +77,26 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       ) : (
         <p className="text-sm italic text-slate-500">Pas de description.</p>
       )}
+      <div className="pt-1">
+        <button
+          type="button"
+          disabled={analyze.isPending}
+          onClick={() => analyze.mutate(analysis !== null)}
+          className="rounded border border-blue-600 px-3 py-1 text-sm text-blue-700 disabled:opacity-50"
+        >
+          {analyze.isPending
+            ? 'Analyse en cours...'
+            : analysis
+              ? 'Actualiser l’analyse'
+              : 'Analyser l’offre'}
+        </button>
+      </div>
+      {analysisError && (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {analysisError}
+        </p>
+      )}
+      {analysis && <OfferRequirementsPanel requirements={analysis.requirements} />}
       <div className="pt-1">
         {confirming ? (
           <div className="flex flex-wrap items-center gap-3 text-sm">
