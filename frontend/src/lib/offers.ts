@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { api } from './api'
+import type { OfferAnalysis } from './offerAnalysis'
 
 export type JobOffer = {
   id: string
@@ -59,4 +60,37 @@ export async function deleteOffer(id: string): Promise<void> {
     if (axios.isAxiosError(error) && error.response?.status === 404) return
     throw error
   }
+}
+
+/** US09: analyse a saved offer. Cached unless `refresh` is true. */
+export async function analyzeOffer(id: string, refresh = false): Promise<OfferAnalysis> {
+  const { data } = await api.post<OfferAnalysis>(
+    `/offers/${id}/analyze`,
+    null,
+    refresh ? { params: { refresh: true } } : undefined,
+  )
+  return data
+}
+
+/** US09: the stored analysis, if any. */
+export async function fetchOfferAnalysis(id: string): Promise<OfferAnalysis> {
+  const { data } = await api.get<OfferAnalysis>(`/offers/${id}/analysis`)
+  return data
+}
+
+/** A readable message for a failed "analyse an offer" request. */
+export function getOfferAnalysisErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail
+    if (typeof detail === 'string') return detail
+    if (error.response?.status === 429) {
+      return "Trop d'analyses en peu de temps, réessayez dans une minute."
+    }
+    if (error.response?.status === 503) {
+      return "Le service d'analyse est momentanément indisponible, réessayez plus tard."
+    }
+    if (error.response?.status === 422) return "Langue de l'offre non prise en charge."
+    if (error.response?.status === 401) return 'Votre session a expiré. Reconnectez-vous.'
+  }
+  return 'Impossible de joindre le serveur. Réessayez dans un instant.'
 }

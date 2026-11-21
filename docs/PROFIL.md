@@ -84,6 +84,16 @@ La normalisation reste simple : rapprocher `ReactJS` et `React` relève de US12 
 - Côté frontend : `fetchMyProfile()`, `saveMyProfile(profile)`, `emptyProfile()` dans `lib/profile.ts`.
 - La page `/mon-profil` (`pages/ManualProfilePage.tsx`) utilise le même formulaire pour créer le profil à la main (US06) et le consulter/corriger (US07) : il n'existe qu'un seul modèle de profil et un seul écran.
 
+## Offre analysée (US09)
+
+`backend/app/schemas/offer_analysis.py` définit `OfferRequirements` avec les mêmes briques que le profil (`schemas/shared.py`) : `job_title` (le poste visé), `skills[]`, `experiences[]` (`min_years`, `max_years`, `job_title`, `employment_type`…) et `education[]` (`level`, `degree`, `field_of_study`…). Ce sont des **exigences** de l'employeur, pas des faits sur le candidat : les types restent distincts (`ExperienceRequirement` vs `Experience`, `EducationRequirement` vs `Education`) pour éviter toute confusion lors du matching (US12). `language` et `schema_version` sont renseignés par l'application, jamais par le LLM.
+
+- Table `offer_analyses` : une seule analyse par offre (`offer_id` unique), stockée en JSONB dans `data`. Une offre ajoutée par URL étant partagée entre candidats, l'analyse est globale à l'offre ; l'accès est protégé par la table `user_offers`.
+- API (authentification requise, offre présente dans la liste du candidat) :
+  - `POST /api/offers/{offer_id}/analyze` → analyse et stocke le résultat (201 la première fois, 200 si le résultat est en cache) ; `?refresh=true` relance le LLM ; 422 si l'offre n'est ni en français ni en anglais.
+  - `GET /api/offers/{offer_id}/analysis` → le résultat stocké, ou 404.
+- Frontend : bouton « Analyser l'offre » sur `/offres`, résultat affiché sous forme de panneau inline ; types TypeScript dans `frontend/src/lib/offerAnalysis.ts`.
+
 ## Faire évoluer le schéma
 
 1. Modifier `schemas/profile.py` **et** `lib/profile.ts`, puis mettre à jour ce document et les exemples JSON.
