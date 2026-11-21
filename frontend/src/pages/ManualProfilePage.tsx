@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import ProfileForm from '../components/ProfileForm'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -37,6 +37,7 @@ export default function ManualProfilePage() {
 
 function ManualProfile() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [serverError, setServerError] = useState<string | null>(null)
 
   const profileQuery = useQuery({ queryKey: PROFILE_QUERY_KEY, queryFn: fetchMyProfile })
@@ -46,6 +47,8 @@ function ManualProfile() {
     onSuccess: (response) => {
       queryClient.setQueryData(PROFILE_QUERY_KEY, response)
       setServerError(null)
+      // Stay on the same page so the candidate sees the confirmation and can keep editing.
+      navigate('/mon-profil', { replace: true })
     },
     onError: (error) => setServerError(saveErrorMessage(error)),
   })

@@ -150,6 +150,9 @@ describe('US06 - saisie manuelle du profil', () => {
       await user.click(screen.getByRole('button', { name: 'Enregistrer mon profil' }))
 
       expect(await screen.findByText('Votre profil a bien été enregistré.')).toBeInTheDocument()
+      // Saving must keep the candidate on the profile form, not bounce to the home page.
+      expect(screen.getByRole('heading', { name: 'Mon profil' })).toBeInTheDocument()
+      expect(screen.queryByText('API :')).not.toBeInTheDocument()
       expect(api.put).toHaveBeenCalledTimes(1)
       const [url, payload] = vi.mocked(api.put).mock.calls[0]
       expect(url).toBe('/profile/me')
