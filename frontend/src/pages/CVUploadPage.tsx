@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   ACCEPTED_CV_EXTENSIONS,
@@ -91,7 +91,13 @@ function CVUpload() {
       <div>
         <h1 className="text-2xl font-bold">Mon CV</h1>
         <p className="mt-1 text-slate-600">
-          Importez votre CV pour que la plateforme puisse l'analyser.
+          Importez votre CV pour que la plateforme puisse l'analyser et remplir votre profil.
+        </p>
+        <p className="mt-2 text-sm text-slate-600">
+          Pas de CV sous la main ?{' '}
+          <Link to="/mon-profil" className="text-blue-600 underline">
+            Remplir mon profil manuellement
+          </Link>
         </p>
       </div>
 

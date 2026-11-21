@@ -142,6 +142,17 @@ describe('US03 - import du CV', () => {
       expect(screen.getByRole('button', { name: 'Remplacer mon CV' })).toBeDisabled()
     })
 
+    it('offers manual profile entry without uploading a CV', async () => {
+      const user = userEvent.setup()
+      mockGet(null)
+      renderPage()
+
+      await user.click(await screen.findByRole('link', { name: 'Remplir mon profil manuellement' }))
+
+      expect(await screen.findByRole('heading', { name: 'Mon profil' })).toBeInTheDocument()
+      expect(screen.getByLabelText('Nom complet')).toHaveValue('')
+    })
+
     it('rejects a file that is not a PDF or DOCX before sending it', async () => {
       // applyAccept: false simulates a user picking "All files" in the file dialog.
       const user = userEvent.setup({ applyAccept: false })

@@ -28,7 +28,8 @@ export default function RegisterPage() {
     setServerError(null)
     try {
       await registerCandidate(values.email, values.password, values.fullName)
-      navigate('/')
+      // US06: start the profile straight away, with both ways to fill it available.
+      navigate('/mon-cv')
     } catch {
       setServerError('Un compte existe déjà avec cet e-mail, ou le serveur est injoignable.')
     }

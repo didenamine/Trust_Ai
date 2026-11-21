@@ -52,6 +52,11 @@ describe('US01 - authentication', () => {
     await user.click(screen.getByRole('button', { name: 'Créer mon compte' }))
 
     await waitFor(() => expect(screen.getByText('new@example.com')).toBeInTheDocument())
+    // US06: a new candidate starts at the CV screen, with manual entry available.
+    expect(await screen.findByRole('heading', { name: 'Mon CV' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Remplir mon profil manuellement' }),
+    ).toBeInTheDocument()
     expect(api.post).toHaveBeenCalledWith(
       '/auth/register',
       expect.objectContaining({ email: 'new@example.com', password: 'S3cret!23' }),
