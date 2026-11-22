@@ -1,21 +1,44 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState, type ReactNode } from 'react'
 import type { CVAdaptation } from '../lib/adaptation'
-import { fetchMyProfile } from '../lib/profile'
 
-const PROFILE_QUERY_KEY = ['profile', 'me']
+function downloadText(filename: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
+  const link = window.document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
-/** US14: the CV adapted to an offer, displayed inline on the "my offers" page. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <h4 className="border-b border-slate-300 pb-0.5 text-xs font-bold uppercase tracking-wide">
+        {title}
+      </h4>
+      {children}
+    </div>
+  )
+}
+
+/** US14: the CV adapted to an offer, as a complete ATS-friendly CV, on the "my offers" page. */
 export default function CVAdaptationPanel({ adaptation }: { adaptation: CVAdaptation }) {
-  const { adapted_cv: cv, missing_skills: missingSkills, matching_score: score } = adaptation
-  const profile = useQuery({ queryKey: PROFILE_QUERY_KEY, queryFn: fetchMyProfile })
-  const profileExperiences = profile.data?.profile.experiences ?? []
+  const { document: cv, adapted_cv: adapted, ats_text: text } = adaptation
+  const { missing_skills: missingSkills, matching_score: score } = adaptation
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const titles = cv.section_titles
+  const technologies = cv.language === 'fr' ? 'Technologies :' : 'Technologies:'
+  const details = [cv.contact.location, cv.contact.phone, cv.contact.email]
+    .filter(Boolean)
+    .join(' | ')
 
-  const experienceLabel = (id: string) => {
-    const experience = profileExperiences.find((item) => item.id === id)
-    if (!experience) return 'Expérience'
-    return experience.company
-      ? `${experience.job_title} · ${experience.company}`
-      : experience.job_title
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('copied')
+    } catch {
+      setCopyStatus('failed')
+    }
   }
 
   return (
@@ -32,72 +55,182 @@ export default function CVAdaptationPanel({ adaptation }: { adaptation: CVAdapta
       </div>
 
       <p className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-        Ce contenu est généré par une IA et n’est pas vérifié : relisez-le et corrigez-le avant de
-        l’utiliser dans votre CV.
+        Ce contenu est généré par une IA et n’est pas vérifié : relisez-le et corrigez-le avant
+        de l’utiliser dans votre CV.
       </p>
 
-      {cv.headline && (
-        <div>
-          <h4 className="font-semibold">Titre</h4>
-          <p>{cv.headline}</p>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={copyText}
+          className="rounded border border-emerald-600 bg-white px-3 py-1 text-xs text-emerald-700"
+        >
+          Copier le texte
+        </button>
+        <button
+          type="button"
+          onClick={() => downloadText('cv-adapte.txt', text)}
+          className="rounded border border-emerald-600 bg-white px-3 py-1 text-xs text-emerald-700"
+        >
+          Télécharger (.txt)
+        </button>
+        {copyStatus === 'copied' && (
+          <span role="status" className="text-xs text-emerald-700">
+            Copié dans le presse-papiers.
+          </span>
+        )}
+        {copyStatus === 'failed' && (
+          <span role="status" className="text-xs text-red-700">
+            Copie impossible : sélectionnez le texte à la main.
+          </span>
+        )}
+      </div>
 
-      {cv.summary && (
-        <div>
-          <h4 className="font-semibold">Résumé</h4>
-          <p className="whitespace-pre-line">{cv.summary}</p>
-        </div>
-      )}
+      <article
+        aria-label="Aperçu du CV au format ATS"
+        className="space-y-3 rounded border border-slate-200 bg-white p-4"
+      >
+        <header className="space-y-0.5">
+          {cv.contact.full_name && <p className="text-lg font-bold">{cv.contact.full_name}</p>}
+          {cv.contact.headline && <p>{cv.contact.headline}</p>}
+          {details && <p className="text-xs text-slate-600">{details}</p>}
+          {cv.contact.links.map((link) => (
+            <p key={link} className="text-xs text-slate-600">
+              {link}
+            </p>
+          ))}
+        </header>
 
-      {cv.highlighted_skills.length > 0 && (
-        <div>
-          <h4 className="font-semibold">Compétences, de la plus à la moins pertinente</h4>
-          <ol aria-label="Compétences mises en avant" className="mt-1 flex flex-wrap gap-1.5">
-            {cv.highlighted_skills.map((name) => (
-              <li
-                key={name}
-                className="rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-xs"
-              >
-                {name}
-              </li>
+        {cv.summary && (
+          <Section title={titles.summary}>
+            <p className="whitespace-pre-line">{cv.summary}</p>
+          </Section>
+        )}
+
+        {cv.skill_groups.length > 0 && (
+          <Section title={titles.skills}>
+            {cv.skill_groups.map((group) => (
+              <p key={group.label}>
+                <span className="font-medium">{group.label} :</span> {group.skills.join(', ')}
+              </p>
             ))}
-          </ol>
-        </div>
-      )}
+          </Section>
+        )}
 
-      {cv.experiences.length > 0 && (
-        <div>
-          <h4 className="font-semibold">Expériences reformulées</h4>
-          <ul className="space-y-2">
-            {cv.experiences.map((experience) => (
-              <li key={experience.experience_id}>
-                <p className="font-medium">{experienceLabel(experience.experience_id)}</p>
-                {experience.description && (
-                  <p className="whitespace-pre-line text-slate-700">{experience.description}</p>
-                )}
-                {experience.achievements.length > 0 && (
-                  <ul className="list-inside list-disc text-slate-700">
-                    {experience.achievements.map((achievement, index) => (
-                      <li key={index}>{achievement}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {cv.experiences.length > 0 && (
+          <Section title={titles.experience}>
+            <ul className="space-y-3">
+              {cv.experiences.map((experience, index) => (
+                <li key={index} className="space-y-0.5">
+                  <p className="font-medium">
+                    {[experience.job_title, experience.company, experience.location]
+                      .filter(Boolean)
+                      .join(' | ')}
+                  </p>
+                  {experience.period && (
+                    <p className="text-xs text-slate-500">{experience.period}</p>
+                  )}
+                  {experience.description && (
+                    <p className="whitespace-pre-line text-slate-700">{experience.description}</p>
+                  )}
+                  {experience.bullets.length > 0 && (
+                    <ul className="list-inside list-disc text-slate-700">
+                      {experience.bullets.map((bullet, bulletIndex) => (
+                        <li key={bulletIndex}>{bullet}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {experience.technologies.length > 0 && (
+                    <p className="text-xs text-slate-600">
+                      {technologies} {experience.technologies.join(', ')}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
 
-      {cv.changes.length > 0 && (
+        {cv.projects.length > 0 && (
+          <Section title={titles.projects}>
+            <ul className="space-y-2">
+              {cv.projects.map((project, index) => (
+                <li key={index} className="space-y-0.5">
+                  <p className="font-medium">
+                    {[project.name, project.period].filter(Boolean).join(' | ')}
+                  </p>
+                  {project.description && (
+                    <p className="whitespace-pre-line text-slate-700">{project.description}</p>
+                  )}
+                  {project.technologies.length > 0 && (
+                    <p className="text-xs text-slate-600">
+                      {technologies} {project.technologies.join(', ')}
+                    </p>
+                  )}
+                  {project.url && <p className="text-xs text-slate-600">{project.url}</p>}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {cv.education.length > 0 && (
+          <Section title={titles.education}>
+            <ul className="space-y-2">
+              {cv.education.map((item, index) => (
+                <li key={index} className="space-y-0.5">
+                  <p className="font-medium">
+                    {[item.degree, item.institution, item.location].filter(Boolean).join(' | ')}
+                  </p>
+                  {item.period && <p className="text-xs text-slate-500">{item.period}</p>}
+                  {item.description && (
+                    <p className="whitespace-pre-line text-slate-700">{item.description}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {cv.certifications.length > 0 && (
+          <Section title={titles.certifications}>
+            <ul>
+              {cv.certifications.map((item, index) => (
+                <li key={index}>
+                  {[item.name, item.issuer, item.date].filter(Boolean).join(' | ')}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {cv.languages.length > 0 && (
+          <Section title={titles.languages}>
+            <ul>
+              {cv.languages.map((item, index) => (
+                <li key={index}>{item.level ? `${item.name} (${item.level})` : item.name}</li>
+              ))}
+            </ul>
+          </Section>
+        )}
+      </article>
+
+      {adapted.changes.length > 0 && (
         <div>
           <h4 className="font-semibold">Ce qui a changé</h4>
           <ul className="list-inside list-disc text-slate-700">
-            {cv.changes.map((change, index) => (
+            {adapted.changes.map((change, index) => (
               <li key={index}>{change}</li>
             ))}
           </ul>
         </div>
+      )}
+
+      {cv.missing_sections.length > 0 && (
+        <p className="text-xs text-slate-700">
+          Sections à compléter dans votre profil :{' '}
+          {cv.missing_sections.map((section) => titles[section] ?? section).join(', ')}.
+        </p>
       )}
 
       {missingSkills.length > 0 && (
