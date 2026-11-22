@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import App from './App'
 import CVAdaptationPanel from './components/CVAdaptationPanel'
 import { AuthProvider } from './context/AuthContext'
-import type { CVAdaptation } from './lib/adaptation'
+import type { ATSCVDocument, CVAdaptation } from './lib/adaptation'
 import { api } from './lib/api'
 import type { OfferAnalysis } from './lib/offerAnalysis'
 import type { JobOfferSummary } from './lib/offers'
@@ -41,6 +41,57 @@ const analysis: OfferAnalysis = {
   },
 }
 
+const cvDocument: ATSCVDocument = {
+  language: 'fr',
+  contact: {
+    full_name: 'Sarra Ben Ali',
+    headline: 'Développeuse full-stack Python / React',
+    email: 'sarra.benali@example.com',
+    phone: '+216 20 000 000',
+    location: 'Tunis, Tunisie',
+    links: ['https://github.com/sarra-ben-ali'],
+  },
+  summary: 'Développeuse full-stack à l’aise avec Python et React, habituée aux API REST.',
+  skill_groups: [
+    { label: 'Compétences techniques', skills: ['Python', 'React', 'FastAPI'] },
+    { label: 'Compétences comportementales', skills: ['Communication'] },
+  ],
+  experiences: [
+    {
+      job_title: 'Développeuse web',
+      company: 'Startup Exemple',
+      location: 'Ariana',
+      period: '09/2025 - Présent',
+      description: 'Évolution d’une application React / TypeScript.',
+      bullets: ['Réalisation reformulée'],
+      technologies: ['React', 'TypeScript'],
+    },
+  ],
+  projects: [],
+  education: [
+    {
+      degree: 'Licence en génie logiciel',
+      institution: 'Institut Supérieur Exemple',
+      location: 'Tunis',
+      period: '2022 - 2025',
+      description: null,
+    },
+  ],
+  certifications: [{ name: 'Professional Scrum Master I', issuer: 'Scrum.org', date: '11/2024' }],
+  languages: [{ name: 'Français', level: 'C1' }],
+  section_titles: {
+    contact: 'Coordonnées',
+    summary: 'Profil professionnel',
+    skills: 'Compétences',
+    experience: 'Expérience professionnelle',
+    projects: 'Projets',
+    education: 'Formation',
+    certifications: 'Certifications',
+    languages: 'Langues',
+  },
+  missing_sections: [],
+}
+
 const adaptation: CVAdaptation = {
   id: 'adaptation-1',
   offer_id: offer.id,
@@ -52,40 +103,19 @@ const adaptation: CVAdaptation = {
     schema_version: 1,
     language: 'fr',
     headline: 'Développeuse full-stack Python / React',
-    summary: 'Développeuse full-stack à l’aise avec Python et React, habituée aux API REST.',
+    summary: cvDocument.summary,
     highlighted_skills: ['Python', 'React', 'FastAPI'],
-    experiences: [
-      {
-        experience_id: 'exp-dev',
-        description: 'Évolution d’une application React / TypeScript.',
-        achievements: ['Réalisation reformulée'],
-      },
-    ],
+    experiences: [],
     changes: ['Résumé recentré sur Python et React, demandés par l’offre.'],
   },
-}
-
-const profileResponse = {
-  profile: {
-    experiences: [{ id: 'exp-dev', job_title: 'Développeuse web', company: 'Startup Exemple' }],
-  },
-}
-
-function newQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false } } })
-}
-
-function renderPanel() {
-  return render(
-    <QueryClientProvider client={newQueryClient()}>
-      <CVAdaptationPanel adaptation={adaptation} />
-    </QueryClientProvider>,
-  )
+  document: cvDocument,
+  ats_text: 'Sarra Ben Ali\nDéveloppeuse full-stack Python / React\n\nPROFIL PROFESSIONNEL\n',
 }
 
 function renderApp() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={newQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/offres']}>
         <AuthProvider>
           <App />
@@ -101,47 +131,73 @@ function mockApiGet() {
       return { data: { id: '1', email: 'me@example.com', full_name: null } }
     }
     if (url === '/offers') return { data: [offer] }
-    if (url === '/profile/me') return { data: profileResponse }
     throw new Error(`unexpected GET ${url}`)
   })
 }
 
 describe('US14 - CV adapté (CVAdaptationPanel)', () => {
-  beforeEach(() => {
-    vi.mocked(api.get).mockReset()
-  })
-
-  it('shows the adapted content, what changed and the skills it could not add', async () => {
-    vi.mocked(api.get).mockResolvedValue({ data: profileResponse })
-    renderPanel()
+  it('shows the complete CV in ATS order, what changed and the skills it could not add', () => {
+    render(<CVAdaptationPanel adaptation={adaptation} />)
 
     const panel = screen.getByRole('region', { name: "CV adapté à l'offre" })
-    expect(within(panel).getByText('Développeuse full-stack Python / React')).toBeInTheDocument()
-    expect(within(panel).getByText(/habituée aux API REST/)).toBeInTheDocument()
+    const cv = within(panel).getByRole('article', { name: 'Aperçu du CV au format ATS' })
 
-    const skills = within(panel).getByRole('list', { name: 'Compétences mises en avant' })
+    expect(within(cv).getByText('Sarra Ben Ali')).toBeInTheDocument()
+    expect(within(cv).getByText('Développeuse full-stack Python / React')).toBeInTheDocument()
     expect(
-      within(skills)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual(['Python', 'React', 'FastAPI'])
+      within(cv).getByText('Tunis, Tunisie | +216 20 000 000 | sarra.benali@example.com'),
+    ).toBeInTheDocument()
+    expect(within(cv).getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
+      'Profil professionnel',
+      'Compétences',
+      'Expérience professionnelle',
+      'Formation',
+      'Certifications',
+      'Langues',
+    ])
 
-    expect(await within(panel).findByText('Développeuse web · Startup Exemple')).toBeInTheDocument()
-    expect(within(panel).getByText(/application React \/ TypeScript/)).toBeInTheDocument()
-    expect(within(panel).getByText('Réalisation reformulée')).toBeInTheDocument()
+    expect(within(cv).getByText(/habituée aux API REST/)).toBeInTheDocument()
+    expect(within(cv).getByText(/Python, React, FastAPI/)).toBeInTheDocument()
+    expect(
+      within(cv).getByText('Développeuse web | Startup Exemple | Ariana'),
+    ).toBeInTheDocument()
+    expect(within(cv).getByText('09/2025 - Présent')).toBeInTheDocument()
+    expect(within(cv).getByText('Réalisation reformulée')).toBeInTheDocument()
+    expect(within(cv).getByText(/Technologies : React, TypeScript/)).toBeInTheDocument()
+    expect(
+      within(cv).getByText('Licence en génie logiciel | Institut Supérieur Exemple | Tunis'),
+    ).toBeInTheDocument()
+    expect(
+      within(cv).getByText('Professional Scrum Master I | Scrum.org | 11/2024'),
+    ).toBeInTheDocument()
+    expect(within(cv).getByText('Français (C1)')).toBeInTheDocument()
+
     expect(within(panel).getByText(/Résumé recentré/)).toBeInTheDocument()
     expect(within(panel).getByText('✕ Kubernetes')).toBeInTheDocument()
     expect(within(panel).getByText(/n’est pas vérifié/)).toBeInTheDocument()
     expect(within(panel).getByText(/compatibilité de départ : 72 %/)).toBeInTheDocument()
   })
 
-  it('still shows the experiences when the profile cannot be read', () => {
-    vi.mocked(api.get).mockRejectedValue(new Error('network down'))
-    renderPanel()
+  it('tells the candidate which standard sections the profile cannot fill', () => {
+    const incomplete: CVAdaptation = {
+      ...adaptation,
+      document: { ...cvDocument, education: [], missing_sections: ['education'] },
+    }
+    render(<CVAdaptationPanel adaptation={incomplete} />)
 
-    const panel = screen.getByRole('region', { name: "CV adapté à l'offre" })
-    expect(within(panel).getByText('Expérience')).toBeInTheDocument()
-    expect(within(panel).getByText(/application React \/ TypeScript/)).toBeInTheDocument()
+    expect(screen.getByText(/Sections à compléter dans votre profil : Formation/)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Formation' })).not.toBeInTheDocument()
+  })
+
+  it('copies the CV as plain text', async () => {
+    const user = userEvent.setup()
+    render(<CVAdaptationPanel adaptation={adaptation} />)
+
+    await user.click(screen.getByRole('button', { name: 'Copier le texte' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Copié')
+    expect(await navigator.clipboard.readText()).toBe(adaptation.ats_text)
+    expect(screen.getByRole('button', { name: 'Télécharger (.txt)' })).toBeInTheDocument()
   })
 })
 
@@ -179,7 +235,7 @@ describe('US14 - adapter son CV depuis Mes offres', () => {
     await user.click(await screen.findByRole('button', { name: 'Adapter mon CV' }))
 
     const panel = await screen.findByRole('region', { name: "CV adapté à l'offre" })
-    expect(within(panel).getByText('Développeuse full-stack Python / React')).toBeInTheDocument()
+    expect(within(panel).getByText('Sarra Ben Ali')).toBeInTheDocument()
     expect(within(panel).getByText('✕ Kubernetes')).toBeInTheDocument()
     expect(api.post).toHaveBeenLastCalledWith('/adaptations/offer-1')
     expect(screen.getByRole('button', { name: 'Régénérer le CV adapté' })).toBeInTheDocument()
