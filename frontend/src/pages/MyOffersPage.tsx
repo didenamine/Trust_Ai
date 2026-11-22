@@ -13,6 +13,8 @@ import {
   getOfferAnalysisErrorMessage,
   type JobOfferSummary,
 } from '../lib/offers'
+import CVAdaptationPanel from '../components/CVAdaptationPanel'
+import { adaptCV, getAdaptationErrorMessage, type CVAdaptation } from '../lib/adaptation'
 
 const LONG_DESCRIPTION_CHARS = 280
 const LONG_DESCRIPTION_LINES = 4
@@ -25,6 +27,8 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [matching, setMatching] = useState<MatchingResult | null>(null)
   const [matchingError, setMatchingError] = useState<string | null>(null)
+  const [adaptation, setAdaptation] = useState<CVAdaptation | null>(null)
+  const [adaptationError, setAdaptationError] = useState<string | null>(null)
   const remove = useMutation({
     mutationFn: () => deleteOffer(offer.id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['offers'] }),
@@ -58,6 +62,15 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
       setMatchingError(msg)
     },
   })
+  const adapt = useMutation({
+    mutationFn: () => adaptCV(offer.id),
+    onSuccess: (result) => {
+      setAdaptation(result)
+      setAdaptationError(null)
+    },
+    onError: (error: unknown) => setAdaptationError(getAdaptationErrorMessage(error)),
+  })
+
   const isLong =
     offer.description.length > LONG_DESCRIPTION_CHARS ||
     offer.description.split('\n').length > LONG_DESCRIPTION_LINES
@@ -116,18 +129,32 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
               : 'Analyser l’offre'}
         </button>
         {analysis && (
-          <button
-            type="button"
-            disabled={match.isPending}
-            onClick={() => match.mutate()}
-            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {match.isPending
-              ? 'Calcul du matching...'
-              : matching
-                ? 'Actualiser la compatibilité'
-                : 'Voir ma compatibilité'}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={match.isPending}
+              onClick={() => match.mutate()}
+              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {match.isPending
+                ? 'Calcul du matching...'
+                : matching
+                  ? 'Actualiser la compatibilité'
+                  : 'Voir ma compatibilité'}
+            </button>
+            <button
+              type="button"
+              disabled={adapt.isPending}
+              onClick={() => adapt.mutate()}
+              className="rounded border border-emerald-600 px-3 py-1 text-sm text-emerald-700 disabled:opacity-50"
+            >
+              {adapt.isPending
+                ? 'Adaptation en cours...'
+                : adaptation
+                  ? 'Régénérer le CV adapté'
+                  : 'Adapter mon CV'}
+            </button>
+          </>
         )}
       </div>
       {analysisError && (
@@ -142,6 +169,12 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
         </p>
       )}
       {matching && <MatchingExplanationPanel matching={matching} />}
+      {adaptationError && (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {adaptationError}
+        </p>
+      )}
+      {adaptation && <CVAdaptationPanel adaptation={adaptation} />}
       <div className="pt-1">
         {confirming ? (
           <div className="flex flex-wrap items-center gap-3 text-sm">
