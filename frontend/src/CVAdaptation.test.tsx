@@ -147,7 +147,11 @@ describe('US14 - CV adapté (CVAdaptationPanel)', () => {
     expect(
       within(cv).getByText('Tunis, Tunisie | +216 20 000 000 | sarra.benali@example.com'),
     ).toBeInTheDocument()
-    expect(within(cv).getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
+    expect(
+      within(cv)
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent),
+    ).toEqual([
       'Profil professionnel',
       'Compétences',
       'Expérience professionnelle',
@@ -158,9 +162,7 @@ describe('US14 - CV adapté (CVAdaptationPanel)', () => {
 
     expect(within(cv).getByText(/habituée aux API REST/)).toBeInTheDocument()
     expect(within(cv).getByText(/Python, React, FastAPI/)).toBeInTheDocument()
-    expect(
-      within(cv).getByText('Développeuse web | Startup Exemple | Ariana'),
-    ).toBeInTheDocument()
+    expect(within(cv).getByText('Développeuse web | Startup Exemple | Ariana')).toBeInTheDocument()
     expect(within(cv).getByText('09/2025 - Présent')).toBeInTheDocument()
     expect(within(cv).getByText('Réalisation reformulée')).toBeInTheDocument()
     expect(within(cv).getByText(/Technologies : React, TypeScript/)).toBeInTheDocument()
@@ -185,7 +187,9 @@ describe('US14 - CV adapté (CVAdaptationPanel)', () => {
     }
     render(<CVAdaptationPanel adaptation={incomplete} />)
 
-    expect(screen.getByText(/Sections à compléter dans votre profil : Formation/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Sections à compléter dans votre profil : Formation/),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Formation' })).not.toBeInTheDocument()
   })
 

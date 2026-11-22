@@ -11,7 +11,7 @@ newest entries first, plain text, "-" bullets, MM/YYYY dates, skills as short li
 """
 
 from collections.abc import Sequence
-from typing import Protocol, TypeVar
+from typing import Protocol
 
 from app.schemas.ats_cv import (
     ATSCVDocument,
@@ -87,9 +87,6 @@ class _Dated(Protocol):
     is_current: bool
 
 
-_D = TypeVar("_D", bound=_Dated)
-
-
 # --- Dates --------------------------------------------------------------------
 
 
@@ -123,7 +120,7 @@ def _sort_key(item: _Dated) -> tuple[int, int, int, int]:
     return (*end, *start)
 
 
-def _newest_first(items: Sequence[_D]) -> list[_D]:
+def _newest_first[D: _Dated](items: Sequence[D]) -> list[D]:
     return sorted(items, key=_sort_key, reverse=True)  # stable: ties keep their order
 
 

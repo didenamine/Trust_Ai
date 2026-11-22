@@ -55,8 +55,8 @@ export default function CVAdaptationPanel({ adaptation }: { adaptation: CVAdapta
       </div>
 
       <p className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-        Ce contenu est généré par une IA et n’est pas vérifié : relisez-le et corrigez-le avant
-        de l’utiliser dans votre CV.
+        Ce contenu est généré par une IA et n’est pas vérifié : relisez-le et corrigez-le avant de
+        l’utiliser dans votre CV.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
