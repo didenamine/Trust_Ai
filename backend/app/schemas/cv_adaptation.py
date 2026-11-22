@@ -5,6 +5,9 @@ Le LLM ne réécrit pas le CV librement : il reformule les textes du profil exis
 déjà présentes. Les compétences demandées mais absentes du profil ne sont jamais ajoutées
 au CV : elles restent un écart signalé au candidat (calculé par le matching, US12).
 
+Le CV complet (coordonnées, dates, formations, langues...) est ensuite assemblé à partir du
+profil par `services/ats_cv_builder.py`: voir `schemas/ats_cv.py`.
+
 Dans le MVP, ce contenu n'est pas vérifié (Truth Guard arrive en Release 2).
 """
 
@@ -14,6 +17,7 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.ats_cv import ATSCVDocument
 from app.schemas.shared import (
     ContentLanguage,
     MediumText,
@@ -82,18 +86,24 @@ class CVAdaptationOut(BaseModel):
     matching_score: int
     # Compétences demandées par l'offre mais absentes du profil : jamais ajoutées au CV.
     missing_skills: list[str]
+    # Les textes adaptés par le LLM, avec ce qui a changé.
     adapted_cv: AdaptedCV
+    # Le CV complet au format ATS, et le même en texte brut (à copier ou télécharger).
+    document: ATSCVDocument
+    ats_text: str
     created_at: datetime
     updated_at: datetime
 
     @classmethod
-    def from_record(cls, record: Any) -> Self:
+    def from_record(cls, record: Any, *, document: ATSCVDocument, ats_text: str) -> Self:
         return cls(
             id=record.id,
             offer_id=record.offer_id,
             matching_score=record.matching_score,
             missing_skills=list(record.missing_skills),
             adapted_cv=AdaptedCV.model_validate(record.data),
+            document=document,
+            ats_text=ats_text,
             created_at=record.created_at,
             updated_at=record.updated_at,
         )

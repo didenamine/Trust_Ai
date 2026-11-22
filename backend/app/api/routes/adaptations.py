@@ -23,6 +23,11 @@ from app.services.llm import (
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["adaptations"])
 
+_NO_PROFILE = (
+    "Profil candidat introuvable. Importez votre CV ou remplissez votre profil "
+    "avant d'adapter votre CV."
+)
+
 
 @router.get("/{offer_id}", response_model=CVAdaptationOut)
 def get_cv_adaptation(
@@ -35,11 +40,13 @@ def get_cv_adaptation(
         record = cv_adaptation_service.get_adaptation(
             db, user_id=current_user.id, offer_id=offer_id
         )
+        if record is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Aucune adaptation pour cette offre.")
+        return cv_adaptation_service.to_output(db, record)
     except offer_analysis_service.OfferNotInListError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Offre introuvable.") from exc
-    if record is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Aucune adaptation pour cette offre.")
-    return CVAdaptationOut.from_record(record)
+    except cv_adaptation_service.NoProfileError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, _NO_PROFILE) from exc
 
 
 @router.post(
@@ -57,21 +64,19 @@ def adapt_my_cv(
 ) -> CVAdaptationOut:
     """US14: adapt the candidate's profile to a selected, analysed offer.
 
-    Based on the gap computed by the matching (US12). Calling it again replaces the
-    stored result. One LLM call, a few seconds. The text is not verified in the MVP.
+    Returns a complete, ATS-friendly CV (`document`, and the same as plain text in
+    `ats_text`) based on the gap computed by the matching (US12). Calling it again
+    replaces the stored result. One LLM call, a few seconds. Not verified in the MVP.
     """
     try:
         record, created = cv_adaptation_service.adapt_cv(
             db, llm, user_id=current_user.id, offer_id=offer_id
         )
+        output = cv_adaptation_service.to_output(db, record)
     except offer_analysis_service.OfferNotInListError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Offre introuvable.") from exc
     except cv_adaptation_service.NoProfileError as exc:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND,
-            "Profil candidat introuvable. Importez votre CV ou remplissez votre profil "
-            "avant d'adapter votre CV.",
-        ) from exc
+        raise HTTPException(status.HTTP_404_NOT_FOUND, _NO_PROFILE) from exc
     except cv_adaptation_service.OfferNotAnalyzedError as exc:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
@@ -104,4 +109,4 @@ def adapt_my_cv(
 
     if created:
         response.status_code = status.HTTP_201_CREATED
-    return CVAdaptationOut.from_record(record)
+    return output
