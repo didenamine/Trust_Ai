@@ -198,6 +198,14 @@ def test_cv_is_adapted_and_stored(
     # An experience that is not in the profile is ignored.
     assert [e["experience_id"] for e in adapted["experiences"]] == ["exp-pfe"]
 
+    # The complete CV is assembled from the profile, in ATS form.
+    cv = data["document"]
+    assert cv["contact"]["full_name"] == "Sarra Ben Ali"
+    assert cv["experiences"][0]["job_title"] == "Développeuse web"  # newest first
+    assert cv["missing_sections"] == []
+    assert "EXPÉRIENCE PROFESSIONNELLE" in data["ats_text"].splitlines()
+    assert "Kubernetes" not in data["ats_text"]
+
     stored = client.get(f"/api/adaptations/{ready}", headers=headers)
     assert stored.status_code == 200, stored.text
     assert stored.json() == data
