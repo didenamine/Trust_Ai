@@ -16,7 +16,7 @@ function RunButton({
       type="button"
       onClick={onClick}
       disabled={isPending}
-      className="rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
+      className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
     >
       {isPending ? 'Analyse en cours…' : label}
     </button>
@@ -72,7 +72,7 @@ export default function ATSAnalysisPage() {
         <p className="text-slate-600">Importez d’abord votre CV pour pouvoir l’analyser.</p>
         <Link
           to="/mon-cv"
-          className="inline-block rounded bg-slate-900 px-4 py-2 font-medium text-white"
+          className="inline-block rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700"
         >
           Importer mon CV
         </Link>

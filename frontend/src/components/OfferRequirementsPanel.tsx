@@ -73,7 +73,7 @@ export default function OfferRequirementsPanel({
   return (
     <section
       aria-label="Exigences de l'offre"
-      className="space-y-3 rounded border border-blue-200 bg-blue-50 p-3 text-sm"
+      className="space-y-3 rounded border border-brand-200 bg-brand-50 p-3 text-sm"
     >
       <div>
         <h3 className="font-semibold">Exigences de l’offre</h3>

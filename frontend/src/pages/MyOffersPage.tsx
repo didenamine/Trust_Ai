@@ -89,7 +89,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
               href={offer.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 underline"
+              className="text-brand-600 underline"
             >
               Annonce d&apos;origine
             </a>
@@ -106,7 +106,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
               type="button"
               aria-expanded={expanded}
               onClick={() => setExpanded(!expanded)}
-              className="text-sm text-blue-600 underline"
+              className="text-sm text-brand-600 underline"
             >
               {expanded ? 'Voir moins' : 'Voir plus'}
             </button>
@@ -120,7 +120,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
           type="button"
           disabled={analyze.isPending}
           onClick={() => analyze.mutate(analysis !== null)}
-          className="rounded border border-blue-600 px-3 py-1 text-sm text-blue-700 disabled:opacity-50"
+          className="rounded border border-brand-600 px-3 py-1 text-sm text-brand-700 disabled:opacity-50"
         >
           {analyze.isPending
             ? 'Analyse en cours...'
@@ -134,7 +134,7 @@ function OfferCard({ offer }: { offer: JobOfferSummary }) {
               type="button"
               disabled={match.isPending}
               onClick={() => match.mutate()}
-              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-3 py-1 text-sm text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
             >
               {match.isPending
                 ? 'Calcul du matching...'
@@ -236,7 +236,10 @@ export default function MyOffersPage() {
     <section className="mx-auto max-w-3xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mes offres</h1>
-        <Link to="/offres/nouvelle" className="rounded bg-blue-600 px-3 py-2 text-sm text-white">
+        <Link
+          to="/offres/nouvelle"
+          className="rounded-lg bg-brand-600 px-3 py-2 text-sm text-white transition-colors hover:bg-brand-700"
+        >
           Ajouter une offre
         </Link>
       </div>
@@ -249,7 +252,7 @@ export default function MyOffersPage() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="text-sm text-blue-600 underline"
+            className="text-sm text-brand-600 underline"
           >
             Réessayer
           </button>

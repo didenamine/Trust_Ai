@@ -11,9 +11,9 @@ const BAND_STYLES: Record<
     label: 'Excellente compatibilité',
   },
   good: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
+    bg: 'bg-brand-50',
+    text: 'text-brand-700',
+    border: 'border-brand-200',
     label: 'Bonne compatibilité',
   },
   moderate: {
@@ -74,7 +74,7 @@ export default function MatchingExplanationPanel({ matching }: { matching: Match
             </div>
             <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full bg-blue-600"
+                className="h-full bg-brand-600"
                 style={{ width: `${Math.round(dimension_scores.skills.ratio * 100)}%` }}
               />
             </div>

@@ -24,10 +24,11 @@ const passwordSchema = z
   })
 type PasswordForm = z.infer<typeof passwordSchema>
 
-const INPUT_CLASS = 'mt-1 w-full rounded border border-slate-300 px-3 py-2'
-const CARD_CLASS = 'space-y-4 rounded border border-slate-200 bg-white p-6'
+const INPUT_CLASS =
+  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none'
+const CARD_CLASS = 'space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm'
 const PRIMARY_BUTTON_CLASS =
-  'rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-50'
+  'rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50'
 
 function accountErrorMessage(error: unknown, fallback: string): string {
   if (isAxiosError(error)) {

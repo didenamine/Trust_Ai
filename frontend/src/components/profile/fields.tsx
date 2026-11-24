@@ -8,7 +8,7 @@ import {
 import type { ProfileFormValues } from '../../lib/profile'
 
 const INPUT_CLASS =
-  'mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none'
+  'mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none'
 const ERROR_CLASS = 'mt-1 text-sm text-red-600'
 
 function inputId(name: string): string {
