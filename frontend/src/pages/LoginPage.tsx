@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import AuthLayout from '../components/AuthLayout'
 import { useAuth } from '../context/AuthContext'
 
 const loginSchema = z.object({
@@ -34,9 +35,12 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <AuthLayout
+      title="Content de vous revoir."
+      subtitle="Connectez-vous pour retrouver votre profil, votre CV et vos offres."
+    >
       <h1 className="text-2xl font-bold">Se connecter</h1>
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
           <label htmlFor="email" className="block text-sm font-medium">
             E-mail
@@ -78,7 +82,7 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="flex justify-between text-sm">
+      <div className="mt-6 flex justify-between text-sm">
         <Link to="/inscription" className="text-brand-600 underline">
           Créer un compte
         </Link>
@@ -86,6 +90,6 @@ export default function LoginPage() {
           Mot de passe oublié ?
         </Link>
       </div>
-    </section>
+    </AuthLayout>
   )
 }

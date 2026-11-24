@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import AuthLayout from '../components/AuthLayout'
 import { useAuth } from '../context/AuthContext'
 
 const registerSchema = z.object({
@@ -36,9 +37,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <AuthLayout
+      title="Rejoignez TrustAI."
+      subtitle="Importez votre CV, comparez-le aux offres et suivez votre compatibilité en un clin d'œil."
+    >
       <h1 className="text-2xl font-bold">Créer un compte</h1>
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium">
             Nom complet (optionnel)
@@ -92,12 +96,12 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      <p className="text-sm text-slate-600">
+      <p className="mt-6 text-sm text-slate-600">
         Déjà un compte ?{' '}
         <Link to="/connexion" className="text-brand-600 underline">
           Se connecter
         </Link>
       </p>
-    </section>
+    </AuthLayout>
   )
 }
