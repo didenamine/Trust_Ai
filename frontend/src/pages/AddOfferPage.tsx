@@ -156,7 +156,7 @@ export default function AddOfferPage() {
               <button
                 type="button"
                 onClick={switchToText}
-                className="text-sm text-blue-600 underline"
+                className="text-sm text-brand-600 underline"
               >
                 Coller le texte à la place
               </button>
@@ -167,7 +167,7 @@ export default function AddOfferPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {isSubmitting
             ? mode === 'url'
@@ -194,7 +194,7 @@ export default function AddOfferPage() {
           <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded bg-white p-3">
             {result.offer.content}
           </pre>
-          <Link to="/offres" className="inline-block text-blue-600 underline">
+          <Link to="/offres" className="inline-block text-brand-600 underline">
             Voir mes offres
           </Link>
         </div>

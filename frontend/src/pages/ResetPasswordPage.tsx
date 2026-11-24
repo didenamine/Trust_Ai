@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
         <p className="text-sm text-slate-600">
           Ce lien de réinitialisation est incomplet. Demandez-en un nouveau.
         </p>
-        <Link to="/mot-de-passe-oublie" className="text-sm text-blue-600 underline">
+        <Link to="/mot-de-passe-oublie" className="text-sm text-brand-600 underline">
           Mot de passe oublié
         </Link>
       </section>
@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6">
+    <section className="mx-auto max-w-sm space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
       <h1 className="text-2xl font-bold">Choisir un nouveau mot de passe</h1>
       <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
             id="newPassword"
             type="password"
             autoComplete="new-password"
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none"
             {...register('newPassword')}
           />
           {errors.newPassword && (
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {isSubmitting ? 'Enregistrement…' : 'Changer le mot de passe'}
         </button>

@@ -1,5 +1,13 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+
+function navLinkClass({ isActive }: { isActive: boolean }): string {
+  return `rounded-lg px-3 py-1.5 font-medium transition-colors ${
+    isActive
+      ? 'bg-brand-50 text-brand-700'
+      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+  }`
+}
 
 export default function Layout() {
   const { user, isLoading, logout } = useAuth()
@@ -13,42 +21,49 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
-        <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-lg font-semibold">
+        <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <Link to="/" className="text-lg font-bold text-brand-700">
             TrustAI
           </Link>
           {!isLoading && (
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-1 text-sm">
               {user ? (
                 <>
-                  <Link to="/mon-cv" className="text-blue-600 underline">
+                  <NavLink to="/tableau-de-bord" className={navLinkClass}>
+                    Tableau de bord
+                  </NavLink>
+                  <NavLink to="/mon-cv" className={navLinkClass}>
                     Mon CV
-                  </Link>
-                  <Link to="/mon-profil" className="text-blue-600 underline">
+                  </NavLink>
+                  <NavLink to="/mon-profil" className={navLinkClass}>
                     Mon profil
-                  </Link>
-                  <Link to="/offres" className="text-blue-600 underline">
+                  </NavLink>
+                  <NavLink to="/offres" className={navLinkClass}>
                     Mes offres
-                  </Link>
-                  <Link to="/offres/nouvelle" className="text-blue-600 underline">
+                  </NavLink>
+                  <NavLink to="/offres/nouvelle" className={navLinkClass}>
                     Ajouter une offre
-                  </Link>
-                  <Link to="/compte" className="text-blue-600 underline">
+                  </NavLink>
+                  <NavLink to="/compte" className={navLinkClass}>
                     Mon compte
-                  </Link>
-                  <span className="text-slate-600">{user.email}</span>
-                  <button onClick={handleLogout} className="text-blue-600 underline">
+                  </NavLink>
+                  <span className="mx-1 hidden h-5 w-px bg-slate-200 sm:block" aria-hidden />
+                  <span className="hidden px-1 text-slate-500 sm:inline">{user.email}</span>
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-lg px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                  >
                     Se déconnecter
                   </button>
                 </>
               ) : (
                 <>
-                  <Link to="/connexion" className="text-blue-600 underline">
+                  <NavLink to="/connexion" className={navLinkClass}>
                     Connexion
-                  </Link>
-                  <Link to="/inscription" className="text-blue-600 underline">
+                  </NavLink>
+                  <NavLink to="/inscription" className={navLinkClass}>
                     Inscription
-                  </Link>
+                  </NavLink>
                 </>
               )}
             </div>

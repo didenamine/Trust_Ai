@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import AuthLayout from '../components/AuthLayout'
 import { useAuth } from '../context/AuthContext'
 
 const registerSchema = z.object({
@@ -36,9 +37,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6">
+    <AuthLayout
+      title="Rejoignez TrustAI."
+      subtitle="Importez votre CV, comparez-le aux offres et suivez votre compatibilité en un clin d'œil."
+    >
       <h1 className="text-2xl font-bold">Créer un compte</h1>
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium">
             Nom complet (optionnel)
@@ -46,7 +50,7 @@ export default function RegisterPage() {
           <input
             id="fullName"
             type="text"
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none"
             {...register('fullName')}
           />
         </div>
@@ -59,7 +63,7 @@ export default function RegisterPage() {
             id="email"
             type="email"
             autoComplete="email"
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none"
             {...register('email')}
           />
           {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
@@ -73,7 +77,7 @@ export default function RegisterPage() {
             id="password"
             type="password"
             autoComplete="new-password"
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none"
             {...register('password')}
           />
           {errors.password && (
@@ -86,18 +90,18 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {isSubmitting ? 'Création…' : 'Créer mon compte'}
         </button>
       </form>
 
-      <p className="text-sm text-slate-600">
+      <p className="mt-6 text-sm text-slate-600">
         Déjà un compte ?{' '}
-        <Link to="/connexion" className="text-blue-600 underline">
+        <Link to="/connexion" className="text-brand-600 underline">
           Se connecter
         </Link>
       </p>
-    </section>
+    </AuthLayout>
   )
 }

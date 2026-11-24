@@ -41,7 +41,7 @@ export default function ProfileForm({
     <FormProvider {...form}>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)} noValidate>
         {source === 'cv_analysis' && (
-          <p className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+          <p className="rounded border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800">
             Ce profil a été généré à partir de votre CV. Vos modifications sont enregistrées dans ce
             même profil.
           </p>
@@ -80,7 +80,7 @@ export default function ProfileForm({
           <button
             type="submit"
             disabled={isSaving}
-            className="flex-1 rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
+            className="flex-1 rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
           >
             {isSaving ? 'Enregistrement…' : 'Enregistrer mon profil'}
           </button>

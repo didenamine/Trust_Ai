@@ -129,7 +129,7 @@ function DimensionBar({ criterion }: Readonly<{ criterion: ATSCriterion }>) {
         aria-valuemax={100}
         aria-valuenow={value}
       >
-        <div className="h-full rounded bg-blue-600" style={{ width: `${value}%` }} />
+        <div className="h-full rounded bg-brand-600" style={{ width: `${value}%` }} />
       </div>
     </div>
   )

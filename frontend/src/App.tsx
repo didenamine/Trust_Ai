@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import AccountPage from './pages/AccountPage'
 import ATSAnalysisPage from './pages/ATSAnalysisPage'
 import CVUploadPage from './pages/CVUploadPage'
+import DashboardPage from './pages/DashboardPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>
+          <Route path="tableau-de-bord" element={<DashboardPage />} />
           <Route path="analyse-ats" element={<ATSAnalysisPage />} />
           <Route path="offres" element={<MyOffersPage />} />
           <Route path="offres/nouvelle" element={<AddOfferPage />} />

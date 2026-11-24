@@ -121,7 +121,7 @@ function ManualProfile() {
           <button
             type="button"
             onClick={startEditing}
-            className="rounded bg-slate-900 px-4 py-2 font-medium text-white"
+            className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700"
           >
             Modifier mon profil
           </button>
@@ -152,7 +152,7 @@ function ManualProfile() {
           <p
             className={`rounded border p-3 text-sm ${
               fromCV
-                ? 'border-blue-200 bg-blue-50 text-blue-800'
+                ? 'border-brand-200 bg-brand-50 text-brand-800'
                 : 'border-slate-200 bg-white text-slate-600'
             }`}
           >

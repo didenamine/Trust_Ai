@@ -38,7 +38,12 @@ export default function ProfileView({ profile }: Readonly<{ profile: CandidatePr
           <ul className="mt-2 space-y-1 text-sm">
             {info.links.map((link) => (
               <li key={link}>
-                <a href={link} target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-600 underline"
+                >
                   {link}
                 </a>
               </li>

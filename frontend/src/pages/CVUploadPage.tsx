@@ -112,7 +112,7 @@ function CVUpload() {
         </p>
         <p className="mt-2 text-sm text-slate-600">
           Pas de CV sous la main ?{' '}
-          <Link to="/mon-profil" className="text-blue-600 underline">
+          <Link to="/mon-profil" className="text-brand-600 underline">
             Remplir mon profil manuellement
           </Link>
         </p>
@@ -145,7 +145,7 @@ function CVUpload() {
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           className={`block cursor-pointer rounded border-2 border-dashed p-6 text-center ${
-            isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-white'
+            isDragging ? 'border-brand-500 bg-brand-50' : 'border-slate-300 bg-white'
           }`}
         >
           <span className="block font-medium">
@@ -173,7 +173,7 @@ function CVUpload() {
         <button
           type="submit"
           disabled={!selectedFile || upload.isPending}
-          className="w-full rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {upload.isPending ? 'Import…' : cv ? 'Remplacer mon CV' : 'Importer mon CV'}
         </button>
@@ -284,11 +284,11 @@ function ATSCard({
           type="button"
           onClick={onAnalyze}
           disabled={isPending}
-          className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
         >
           {isPending ? 'Calcul du score en cours…' : 'Vérifier le score ATS'}
         </button>
-        <Link to="/analyse-ats" className="text-sm text-blue-600 underline">
+        <Link to="/analyse-ats" className="text-sm text-brand-600 underline">
           Voir le rapport ATS
         </Link>
       </div>
