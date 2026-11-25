@@ -44,6 +44,9 @@ export default function Layout() {
                   <NavLink to="/offres/nouvelle" className={navLinkClass}>
                     Ajouter une offre
                   </NavLink>
+                  <NavLink to="/competences-manquantes" className={navLinkClass}>
+                    Compétences manquantes
+                  </NavLink>
                   <NavLink to="/compte" className={navLinkClass}>
                     Mon compte
                   </NavLink>
