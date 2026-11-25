@@ -15,10 +15,34 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.matching import MatchingResult
 from app.schemas.offer_analysis import OfferRequirements
-from app.services import profile_service
+from app.schemas.skill_gap import SkillGapResult
+from app.services import profile_service, skill_gap_service
 from app.services.matching_service import calculate_matching
 
 router = APIRouter(tags=["matching"])
+
+_NO_PROFILE = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Profil candidat introuvable. Veuillez créer votre profil avant de lancer le matching.",
+)
+
+
+# Registered before "/{offer_id}" so this literal path isn't swallowed by it.
+@router.get(
+    "/skill-gaps",
+    response_model=SkillGapResult,
+    summary="Prioritised skill gaps across every analysed offer (US33)",
+)
+def get_skill_gaps(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> SkillGapResult:
+    """Aggregate the missing skills (US12) across all of the candidate's analysed offers."""
+    profile = profile_service.get_candidate_profile(db, current_user.id)
+    if profile is None:
+        raise _NO_PROFILE
+
+    return skill_gap_service.compute_skill_gaps(db, user_id=current_user.id, profile=profile)
 
 
 @router.get(
@@ -36,10 +60,7 @@ def get_offer_matching(
 
     profile = profile_service.get_candidate_profile(db, current_user.id)
     if profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profil candidat introuvable. Veuillez créer votre profil avant de lancer le matching.",
-        )
+        raise _NO_PROFILE
 
     try:
         analysis = offer_analysis_service.get_analysis(
