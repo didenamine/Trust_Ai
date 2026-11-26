@@ -78,6 +78,36 @@ describe('US01 - authentication', () => {
     expect(localStorage.getItem('trustai.access_token')).toBeNull()
   })
 
+  it('logs an existing candidate in and lands on the dashboard', async () => {
+    const user = userEvent.setup()
+    const notFound = Object.assign(new Error('not found'), {
+      isAxiosError: true,
+      response: { status: 404 },
+    })
+    vi.mocked(api.post).mockImplementation(async (url: string) => {
+      if (url === '/auth/login') {
+        return { data: { access_token: 'fake-token', token_type: 'bearer' } }
+      }
+      throw new Error(`unexpected POST ${url}`)
+    })
+    vi.mocked(api.get).mockImplementation(async (url: string) => {
+      if (url === '/auth/me') {
+        return { data: { id: '1', email: 'me@example.com', full_name: null } }
+      }
+      if (url === '/offers') return { data: [] }
+      if (url === '/profile/me' || url === '/cv/me' || url === '/ats/me') throw notFound
+      throw new Error(`unexpected GET ${url}`)
+    })
+
+    renderApp('/connexion')
+
+    await user.type(screen.getByLabelText('E-mail'), 'me@example.com')
+    await user.type(screen.getByLabelText('Mot de passe'), 'S3cret!23')
+    await user.click(screen.getByRole('button', { name: 'Se connecter' }))
+
+    expect(await screen.findByRole('heading', { name: 'Tableau de bord' })).toBeInTheDocument()
+  })
+
   it('restores the session from a stored token and can log out', async () => {
     const user = userEvent.setup()
     localStorage.setItem('trustai.access_token', 'fake-token')

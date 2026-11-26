@@ -28,7 +28,7 @@ export default function LoginPage() {
     setServerError(null)
     try {
       await login(values.email, values.password)
-      navigate('/')
+      navigate('/tableau-de-bord')
     } catch {
       setServerError('E-mail ou mot de passe incorrect.')
     }
