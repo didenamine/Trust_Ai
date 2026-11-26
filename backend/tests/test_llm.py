@@ -241,6 +241,40 @@ def test_bad_request_is_a_response_error_with_groq_message() -> None:
         call(client)
 
 
+def schema_rejected() -> httpx.Response:
+    return httpx.Response(
+        400,
+        json={
+            "error": {
+                "message": "Generated JSON does not match the expected schema",
+                "code": "json_validate_failed",
+            }
+        },
+    )
+
+
+def test_schema_rejection_is_retried_then_succeeds() -> None:
+    responses = iter([schema_rejected(), httpx.Response(200, json=groq_answer('{"ok": true}'))])
+    client, sleeps = make_client(lambda request: next(responses), max_retries=2)
+
+    assert call(client) == {"ok": True}
+    assert sleeps == []
+
+
+def test_schema_rejection_on_every_attempt_is_a_response_error() -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return schema_rejected()
+
+    client, _ = make_client(handler, max_retries=2)
+
+    with pytest.raises(LLMResponseError, match="does not match the expected schema"):
+        call(client)
+    assert len(calls) == 3
+
+
 @pytest.mark.parametrize(
     "body",
     [
