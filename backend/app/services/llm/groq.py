@@ -116,6 +116,12 @@ class GroqClient:
                 if response.status_code in (401, 403):
                     raise LLMNotConfiguredError("Groq rejected the API key")
 
+                if _error_code(response) == "json_validate_failed" and not is_last_attempt:
+                    # Strict mode rejected the model's own output (e.g. a value outside an
+                    # enum). Generation is not deterministic: a new attempt usually passes.
+                    logger.warning("Groq answer failed schema validation (attempt %d)", attempt + 1)
+                    continue
+
                 if response.status_code >= 400:
                     raise LLMResponseError(
                         f"Groq returned {response.status_code}: {_error_message(response)}"
@@ -148,6 +154,13 @@ def _retry_after_seconds(response: httpx.Response) -> float | None:
     try:
         return float(response.headers["retry-after"])
     except (KeyError, ValueError):
+        return None
+
+
+def _error_code(response: httpx.Response) -> str | None:
+    try:
+        return str(response.json()["error"]["code"])
+    except (ValueError, KeyError, TypeError):
         return None
 
 

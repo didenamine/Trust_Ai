@@ -67,7 +67,9 @@ Rules:
   ("JavaScript", "Python", "Scrum", "managed"), never a sentence and never personal
   information (name, address, email, phone, employer names). Set `kind` to
   hard_skill, tool, method, action_verb or generic. Set `line` to the L number where
-  the term appears and `section` when it is unambiguous. `alias_count` is the number
+  the term appears and `section` to one of the canonical ids above when it is
+  unambiguous; otherwise (e.g. a projects or interests heading) set `section` to
+  null, never another value. `alias_count` is the number
   of different spellings of the same term found in the CV (0 when only one spelling).
 - Keep the CV's language for canonical terms; do not translate them.
 """
