@@ -21,7 +21,7 @@ Navigateur ──► Frontend (React, :5173) ──► API (FastAPI, :8000/api) 
 
 1. **Compte** : inscription et connexion (JWT), gestion du compte (US01, US02).
 2. **CV** : import PDF/DOCX (US03), puis analyse : extraction du texte, appel au LLM, profil structuré en JSON, en français ou en anglais (US05). Le profil peut aussi être saisi à la main (US06), consulté et corrigé (US07).
-3. **Offre** : ajout par URL ou par texte (US08), puis analyse manuelle par le LLM en exigences structurées comparables au profil (US09).
+3. **Offre** : ajout par URL ou par texte (US08), puis analyse par le LLM en un format comparable au profil (US09).
 4. **Matching** : comparaison profil / offre avec pondération fixe, d'où un **score de compatibilité** (US12), son **explication** (US13) et les **compétences manquantes** (US33).
 5. **Analyse ATS** du CV (US24) et **tableau de bord** de synthèse (US31).
 

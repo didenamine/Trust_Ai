@@ -28,24 +28,6 @@ class Settings(BaseSettings):
     upload_dir: Path = Path("uploads")
     max_upload_size_mb: int = 5
 
-    # LLM (US05, US09, US14): Groq's OpenAI-compatible API.
-    llm_api_key: str = ""
-    llm_base_url: str = "https://api.groq.com/openai/v1"
-    # Must support strict json_schema output (see app/services/llm/groq.py).
-    llm_model: str = "openai/gpt-oss-120b"
-    llm_timeout_seconds: float = 60.0
-    llm_max_retries: int = 2
-    # Room for the model's reasoning + a full profile (Groq's default, 3072, cuts it off).
-    llm_max_completion_tokens: int = 8192
-    # "low" / "medium" / "high" for gpt-oss models; empty for models without reasoning.
-    llm_reasoning_effort: str = "low"
-
-    # JWT (US01)
-    jwt_secret: str = "change-me"
-    jwt_expires_minutes: int = 60
-    # Short-lived on purpose: a reset token grants a password change with no other check.
-    password_reset_expires_minutes: int = 15
-
     @property
     def database_url(self) -> URL:
         return URL.create(
